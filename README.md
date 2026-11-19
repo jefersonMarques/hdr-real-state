@@ -1,41 +1,48 @@
 # HDR Real Estate
 
-Local-first HDR image processing for professional real-estate photography.
+**Offline-first neural HDR for professional real-estate photography.**
 
-## Goal
+Target workflow: three bracketed camera RAW files (underexposed, reference, overexposed) -> real neural HDR fusion -> mixed-light white balance and natural window handling -> export -> local Windows desktop application.
 
-Combine **exactly three bracketed camera RAW files** (underexposed, reference, overexposed) with a **real neural HDR reconstruction model**, then develop the result with consistent white balance and natural interior/window exposure.
+## Project status
 
-The intended desktop product must work offline on Windows and offer CPU fallback when an AMD, NVIDIA, or Intel GPU is incompatible.
+**Stage 0: experimental neural proof of concept. Not yet an MVP or an installer.**
 
-## Current status
+The repository contains:
 
-**Research and model-validation stage. This repository does not yet contain an approved production HDR engine or a distributable installer.**
+- [AFUNet RAW evaluation script](poc/hdr_afunet.py): uses the upstream neural model from a separate local checkout, takes three RAW images, reconstructs the image in overlapping patches, and exports float32 TIFF plus JPEG preview
+- [Unit tests](tests/test_hdr_afunet.py): validates channel preparation, tile coverage and blending using a synthetic stand-in model
+- [Research and license review](docs/open-source-evaluation.md): alternatives already available on GitHub
+- [MVP plan and local usage](docs/mvp-plan.md): instructions and current limitations
+- [Python dependencies](requirements.txt)
 
-The project will not misrepresent a conventional exposure-fusion implementation as an AI-based HDR engine. All neural model weights, dependencies, and licenses must be verified before bundling.
+### Run the experimental neural pipeline
 
-- [Open-source evaluation](docs/open-source-evaluation.md)
-- [Implementation plan](docs/mvp-plan.md)
+Install an appropriate Python/PyTorch environment, then install dependencies:
 
-## Proposed stack
+```bash
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+```
 
-- Python + PyTorch for neural-model evaluation
-- LibRaw / rawpy for camera RAW decoding
-- Qt / PySide6 for the first desktop interface
-- C++ and ONNX Runtime for optional production optimization
-- Local model inference without uploads, cloud APIs, or per-image fees
+Check out the original [AFUNet repository](https://github.com/eezkni/AFUNet), review its licensing/weights, and use the CLI described in [the MVP plan](docs/mvp-plan.md). The app never downloads or uploads photos.
 
-## Model validation gates
+**No model code or pretrained weight files are bundled here.** The upstream source and weights are external pending licensing review.
 
-1. Successfully import 3 camera RAW images, preserve relative exposures, camera color metadata, and alignment.
-2. Run a real pretrained neural fusion model on CPU.
-3. Compare output against professional real-estate edits with windows, mixed lights, white walls, and moving objects.
-4. Validate GPU providers and memory-constrained inference.
-5. Confirm licenses for **both** code and pretrained weights before bundling.
-6. Build and verify an offline Windows installer.
+## Production objectives
 
-## Notes
+- Three RAW camera exposures per photograph, preserving accurate color and camera metadata
+- Neural reconstruction and mixed-light white balance, with professional real-estate finishing
+- Windows installer with models packaged locally and no cloud inference
+- AMD/NVIDIA/Intel acceleration where supported, CPU fallback
+- High-resolution TIFF/JPEG export, batch processing, natural windows and neutral walls
 
-Commercial distribution of derivative works of GPL-3.0 / AGPL-3.0 projects has obligations, so CalibRaw and RapidRAW are only research references unless the licensing strategy changes.
+## Important limitations
 
-No photos should be transmitted outside the user's computer.
+- Real RAW + upstream checkpoint end-to-end operation has **not** been validated yet.
+- The initial PoC assumes equally spaced -2/0/+2 EV brackets; EXIF exposure extraction and exact camera profiles are pending.
+- Initial PyTorch PoC selects CUDA when available, otherwise CPU. Cross-vendor Windows acceleration is future work.
+- No calibrated white-balance AI, high-end real-estate tone mapping, GUI or offline installer exists yet.
+- Code and pretrained weights from GPL/AGPL projects are not copied into this independent implementation.
+
+A conventional Mertens HDR pipeline alone would not satisfy this project's mandatory AI requirement.
