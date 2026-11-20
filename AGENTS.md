@@ -17,6 +17,15 @@ V5:
 
 Continue exclusively on `main`, preserving V2–V4 experiments. Do not create branches, PRs or GitHub Actions.
 
+## Sony RAW plateau finding — fidelity blocker (2026-11-20)
+
+The user's three real Sony `DSC01132.ARW`, `DSC01134.ARW`, `DSC01133.ARW` audits succeeded; full native mosaic dimensions `4024 x 6024`, 2x2 Bayer, sensor black `512` and **camera-declared white `15360`**. Several CFA color-channel p99 values normalize to `1.068157315`, consistent with raw code ~`16372`; this exceeds the declared threshold. The old `sensor_saturated_fraction` is **not proven physical clipping**, only the fraction reaching/exceeding camera-declared white. Do not implement binary clipping confidence from this number without checking the upper-code histogram.
+
+- `poc/inspect_raw_sensor_v5.py` now records `libraw_global_white_level`, observed raw maximum, p99 raw code, high-code mode and fractions against camera white to identify possible native clipping plateaus, without changing the actual HDR fusion.
+- `tests/test_raw_sensor_v5.py` now contains seven tests, including an artificial high-code plateau case. These new tests and RAW runs are **pending WSL validation**.
+- `docs/v5-raw-sensor-audit.md` contains the real audit and a new output folder `output/v5-raw-audit-03`. Never overwrite previous outputs.
+- Decide on physically justified per-channel clip thresholds and source confidence only after reviewing that new diagnostic. Do not confuse histogram plateau, ADC maximum, or camera-declared white with proof of retained highlight detail. Preserve production-facing V5 results.
+
 ## V5 RAW sensor audit and next V5.2 quality gate (2026-11-20)
 
 The user's new Sony RAWs were successfully processed by V5, but user correctly requested exploiting **RAW sensor data**, not merely treated-as-image RGB. The existing `load_linear_raw` is 16-bit `rawpy.postprocess(no_auto_bright=True, gamma=(1,1))` then float32 linear developed sRGB — not native sensor mosaic fusion.
