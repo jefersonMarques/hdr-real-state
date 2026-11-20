@@ -35,8 +35,9 @@ explorer.exe "$(wslpath -w /opt/hdr-real-state/output/flux-klein-test-01)"
 The first successful invocation downloads model weights into the Hugging Face local cache, potentially requiring substantial disk space. The image and output files remain local; model downloads require Internet only for their initial acquisition.
 
 Results:
-- `output/flux-klein-test-01/flux_edit.png`
-- `output/flux-klein-test-01/report.json`
+- `output/flux-klein-test-01/flux_input.png`: exact resized source
+- `output/flux-klein-test-01/flux_edit.png`: generative output
+- `output/flux-klein-test-01/report.json`: run configuration
 
 The output directory must be empty or nonexistent. For retries, use a new output directory. Do not delete cached models or existing experiments.
 
@@ -45,11 +46,14 @@ The output directory must be empty or nonexistent. For retries, use a new output
 When `flux_edit.png` exists:
 
 ~~~bash
-python poc/benchmark_editor_v3.py   --before output/v2-new-photos/conventional_local.jpg   --after output/flux-klein-test-01/flux_edit.png   --reference photos/DSC01858.jpg   --output-dir output/flux-klein-review-01
+python poc/benchmark_editor_v3.py \
+  --before output/flux-klein-test-01/flux_input.png \
+  --after output/flux-klein-test-01/flux_edit.png \
+  --reference photos/DSC01858.jpg \
+  --output-dir output/flux-klein-review-01
 ~~~
 
-**Note:** the existing editor benchmark refuses differing baseline/editor dimensions. Therefore to perform a fair comparison, first prepare the same reduced source using `poc/prepare_editor_input.py` with `--max-side 768` and use that image as `--before`. The source must have the same dimensions as the FLUX inference input. The Photoshop reference will be resized as an exploratory visual reference. Do not judge pixel MAE in isolation.
-
+**Note:** the editor benchmark needs identical dimensions for the input and output. `flux_input.png` is the exact resized source actually fed into FLUX. The Photoshop reference is resized for the preliminary evaluation. Do not judge MAE in isolation.
 ## Memory troubleshooting
 
 If CPU RAM is insufficient or the model still hits CUDA OOM with `--offload sequential`, stop and report the complete error. A quantized checkpoint or ComfyUI GGUF workflow may be required. Do not repeatedly reinstall CUDA, replace HDR environments or silently switch to a remote inference service.
