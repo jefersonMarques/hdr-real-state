@@ -33,7 +33,7 @@ def load_afunet(source_directory: Path, checkpoint_path: Path, device: torch.dev
     if not checkpoint_path.is_file():
         raise FileNotFoundError("AFUNet checkpoint not found")
 
-    sys.path.insert(0, str(source_directory.resolve())
+    sys.path.insert(0, str(source_directory.resolve()))
 
     try:
         from models.AFUNet import AFUNet
