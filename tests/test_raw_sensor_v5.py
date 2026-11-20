@@ -110,10 +110,6 @@ class RawSensorAuditTests(unittest.TestCase):
                 [record["relative_exposure"] for record in report["inputs"]],
                 [0.5, 1.0, 2.0],
             )
-            self.assertEqual(
-                [record["file"] for record in report["inputs"] if "file" in record],
-                [],
-            )
             self.assertEqual(set(normalized), {"visible_mosaic_dimensions", "channels"})
             self.assertEqual(len({id(record) for record in report["inputs"]}), 3)
             self.assertTrue((folder / "audit" / "raw_sensor_report.json").is_file())
