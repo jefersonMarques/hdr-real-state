@@ -28,6 +28,8 @@ First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.m
 - `docs/v3-adaptive-lut-test.md`: next execution and Photoshop comparison instructions for the RTX 4060.
 - `docs/v3-first-model-test.md`: executable first trial with **external** DeepLPF pretrained model, isolated editor environment and RTX 4060.
 - `poc/prepare_editor_input.py`: prepare a bounded RGB image for memory-limited GPU inference, keeping existing source images intact.
+- `poc/test_flux_klein_edit.py`: experimental FLUX.2 Klein image-to-image generative editing using a separate `.venv-flux`, 768px bounded input and sequential CPU offload; compare `flux_input.png` with `flux_edit.png`, do not assume output is faithful to a property.
+- `docs/v3-flux-klein-test.md`: executable test and safety/memory limitations.
 
 **DeepLPF was successfully executed at 1024 × 684 on the RTX 4060. The first real-estate quality gate FAILED:** approximate MAE vs Photoshop was 42.3678 for conventional vs 43.0569 for DeepLPF (reference resized, unregistered), and visual ceiling/window/color quality remained deficient. The original full-resolution run ran out of VRAM. See [docs/v3-deeplpf-evaluation.md](docs/v3-deeplpf-evaluation.md). The next step is to validate a different learned editor, not hand-tune DeepLPF with custom masks. External models, weights and user photos are intentionally not committed.
 
@@ -45,7 +47,7 @@ First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.m
 - Never claim a GPU running implies useful neural photographic editing.
 - Reject fabricated scenery/objects, unlabeled hallucination and structural geometric modifications.
 
-## Next work: validate actual pretrained LUT weights on WSL
+## Next work: validate actual generative FLUX image editing on WSL
 
 1. Treat the first DeepLPF pretrained trial as a negative result in this real-estate scene, documented in `docs/v3-deeplpf-evaluation.md`.
 2. Evaluate a second learned retoucher (modern image-adaptive 3D LUT with confirmed pretrained checkpoint) on the identical conventional baseline and Photoshop reference, using a separate environment if required.
