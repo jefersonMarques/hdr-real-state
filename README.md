@@ -10,6 +10,12 @@ Target workflow: three bracketed camera RAW files (underexposed, reference, over
 
 A first full-resolution Sony ARW neural test ran locally on an RTX 4060 through PyTorch CUDA. The photographed bedroom's generated preview was substantially underexposed and the window lacked useful exterior contrast. The cause has not been isolated; the neural TIFF, original brackets and preview mapping must be compared before choosing a correction.
 
+## Native RAW sensor diagnostics (current V5.2 preparation)
+
+The [RAW sensor-level audit](docs/v5-raw-sensor-audit.md) adds a **read-only** inspection of the three original RAW mosaics, including per-CFA-channel black/white levels and fractions of pixels near sensor clipping. [Script](poc/inspect_raw_sensor_v5.py) · [Tests](tests/test_raw_sensor_v5.py). This identifies which exposures hold **real sensor headroom** rather than relying solely on already-developed RGB. The HDR merge itself has **not yet** been switched to a new sensor-native method; that will require validating the Sony source metadata, CFA orientation and registration.
+
+The older tone-map test that rejected exactly-1.0 normalized output was corrected to accept the documented 0-to-1 range. This changes the test, **not** HDR clipping behavior.
+
 ## V5 — camera RAW HDR fusion baseline (new test)
 
 The [V5 real HDR baseline](docs/v5-real-hdr-pipeline.md) has been implemented **directly on `main`**, without changing V4 or older experiments. It decodes three original RAW exposures with a shared camera white balance, registers frame translations, merges reliable source data into a float32 HDR, performs local tone mapping and exports full-resolution JPEG / 16-bit TIFF.
