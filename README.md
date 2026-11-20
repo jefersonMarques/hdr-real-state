@@ -6,43 +6,55 @@ Target workflow: three bracketed camera RAW files (underexposed, reference, over
 
 ## Project status
 
-**Stage 0: experimental neural proof of concept. Not yet an MVP or an installer.**
+**Stage 0: experimental neural proof of concept, with a new conventional HDR quality baseline. Not yet a production editor or an installer.**
+
+A first full-resolution Sony ARW neural test ran locally on an RTX 4060 through PyTorch CUDA. The photographed bedroom's generated preview was substantially underexposed and the window lacked useful exterior contrast. The cause has not been isolated; the neural TIFF, original brackets and preview mapping must be compared before choosing a correction.
 
 The repository contains:
 
-- [AFUNet RAW evaluation script](poc/hdr_afunet.py): uses the upstream neural model from a separate local checkout, takes three RAW images, reconstructs the image in overlapping patches, and exports float32 TIFF plus JPEG preview
-- [Unit tests](tests/test_hdr_afunet.py): validates channel preparation, tile coverage and blending using a synthetic stand-in model
-- [Research and license review](docs/open-source-evaluation.md): alternatives already available on GitHub
-- [MVP plan and local usage](docs/mvp-plan.md): instructions and current limitations
-- [Python dependencies](requirements.txt)
+- [AFUNet RAW evaluation](poc/hdr_afunet.py): experimental neural model inference using an external upstream checkout and checkpoint; outputs floating-point HDR TIFF and an initial JPEG preview
+- [HDR diagnostic comparison](poc/hdr_diagnostics.py): reads exposure metadata, develops the three RAWs, produces a simple conventional HDR baseline and re-renders the previously saved neural TIFF with the same tone map
+- [Quality validation guide](docs/quality-validation.md): exact WSL commands, comparison workflow, known limitations and decision gate
+- [Tests](tests/): synthetic tests for neural tiling, exposure weighting and preview conversion
+- [Research and license review](docs/open-source-evaluation.md): external open-source candidates
+- [MVP plan](docs/mvp-plan.md): staged product goals
 
-### Run the experimental neural pipeline
+## Reproduce the quality comparison on WSL
 
-Install an appropriate Python/PyTorch environment, then install dependencies:
+With the three example Sony RAWs in `photos/`, the existing neural output in `output/`, and ExifTool available:
 
 ```bash
-python -m pip install -r requirements.txt
+cd /opt/hdr-real-state
+source .venv/bin/activate
 python -m unittest discover -s tests -v
+
+python poc/hdr_diagnostics.py \
+  --under photos/DSC02055.ARW \
+  --reference photos/DSC02054.ARW \
+  --over photos/DSC02056.ARW \
+  --neural-hdr output/teste2.tiff \
+  --neural-preview output/teste2_preview.jpg \
+  --output-dir output/review-test2
 ```
 
-Check out the original [AFUNet repository](https://github.com/eezkni/AFUNet), review its licensing/weights, and use the CLI described in [the MVP plan](docs/mvp-plan.md). The app never downloads or uploads photos.
+Inspect `output/review-test2/comparison.jpg` and `metrics.json`. The script **does not rerun AFUNet**. Add `--final-reference photos/final.jpg` if the corresponding professional edit is available. Instructions and limitations: [quality validation](docs/quality-validation.md).
 
-**No model code or pretrained weight files are bundled here.** The upstream source and weights are external pending licensing review.
+Run the original neural proof of concept using the [MVP plan](docs/mvp-plan.md). **No upstream AFUNet source or pretrained weights are bundled**; verify their redistribution terms before commercial use.
 
-## Production objectives
+## Product goals
 
-- Three RAW camera exposures per photograph, preserving accurate color and camera metadata
-- Neural reconstruction and mixed-light white balance, with professional real-estate finishing
-- Windows installer with models packaged locally and no cloud inference
-- AMD/NVIDIA/Intel acceleration where supported, CPU fallback
-- High-resolution TIFF/JPEG export, batch processing, natural windows and neutral walls
+- Three RAW camera exposures per photograph with correct metadata and camera color
+- Genuine neural HDR reconstruction, with an auditable conventional baseline
+- Accurate mixed-light white balance, bright natural interiors and preserved exterior window detail
+- Local Windows desktop installer; no mandatory cloud services
+- Compatible GPU inference and CPU fallback
+- Professional batch TIFF/JPEG export
 
-## Important limitations
+## Current limitations
 
-- Real RAW + upstream checkpoint end-to-end operation has **not** been validated yet.
-- The initial PoC assumes equally spaced -2/0/+2 EV brackets; EXIF exposure extraction and exact camera profiles are pending.
-- Initial PyTorch PoC selects CUDA when available, otherwise CPU. Cross-vendor Windows acceleration is future work.
-- No calibrated white-balance AI, high-end real-estate tone mapping, GUI or offline installer exists yet.
-- Code and pretrained weights from GPL/AGPL projects are not copied into this independent implementation.
-
-A conventional Mertens HDR pipeline alone would not satisfy this project's mandatory AI requirement.
+- The conventional baseline does not align photos or deghost moving objects.
+- Neural input calibration against AFUNet's benchmark dataset is pending; current RAW developing may not match the model's training input.
+- Neither pathway has a professional local tone mapper, calibrated color workflow or automatic neutral-wall correction.
+- The RTX 4060/CUDA 12.8 environment was confirmed by a local user test; cross-vendor Windows acceleration is unimplemented.
+- Quality metrics are descriptive image statistics only, not a score of HDR correctness.
+- Code from GPL/AGPL alternative editors has not been copied. Commercial rights for third-party neural weights must be reviewed.
