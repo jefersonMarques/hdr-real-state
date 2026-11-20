@@ -17,6 +17,18 @@ V5:
 
 Continue exclusively on `main`, preserving V2–V4 experiments. Do not create branches, PRs or GitHub Actions.
 
+## Final photographic quality gate — V5.3 (2026-11-20)
+
+User's comparison of the kitchen professional photograph and V5.2 was still unacceptable: the pipeline produced washed highlights and interior, with low contrast and less convincing window/exterior details. User requested **one more direct implementation**, prioritizing correct joining of actual exposure information, local contrast, preserving sharp external scenery and preventing false window light bleed; if unsuccessful, user may discontinue project.
+
+- New `poc/source_fusion_v53.py` is a separate **opt-in** standalone end-to-end source composite and local photographic renderer. It reads the original V5 `triplet_v5.json` (under/reference/over original-camera RAW-developed linear frames) and constructs a new float32 HDR, not the previous V5.2 HDR. Highlights preferentially use valid underexposed detail; normal architecture/reference; true shadow signal from overexposed bracket. A reference-frame disagreement gate limits some ghosts.
+- At preview scale, an automatic large-bright-area exterior mask is selected and guided-filter smoothed to control window tone without diffuse spill across structural edges. A **red-on-source mask overlay** is saved and **must be visually checked**. Outdoor mask mistakes are a rejection criterion, not a reason to claim better HDR.
+- New tone mapper separates edge-aware low-frequency log luminance and high-frequency detail and controls shadow toe, with no generative hallucination. Outputs full camera-resolution JPEG quality 98 and source-derived 16-bit TIFF.
+- `tests/test_source_fusion_v53.py`: nine synthetic coverage tests. They and the actual WSL Sony kitchen run remain **pending**. Documentation [docs/v53-last-quality-gate.md](docs/v53-last-quality-gate.md) has exact single-run commands and stop conditions.
+- This remains conventional source-preserving photography, **not neural AI**. Professional quality and native RAW precision beyond existing LibRaw conversion are unproven. It must not be claimed as production-ready.
+- User requested working exclusively on `main`, no branches, PRs or GitHub Actions. Preserve all earlier experiments.
+- **Stop gate:** if the output fails to improve the exterior/window continuity, textures and natural contrast **materially** compared with same-scene V5.2 and the professional kitchen photograph, stop the current heuristic iteration and reassess viability/data/model strategy rather than promising random improvements.
+
 ## V5.2 opt-in native sensor-guided merge (2026-11-20)
 
 The user's third real Sony RAW audit confirmed that all four CFA indices and all three brackets share a repeated upper code **16372**, which is above camera-declared white `15360` and near LibRaw global white `16380`; rare maximum `16596`. It is a **possible sensor clipping plateau**, not a validated physical saturation limit. The seven RAW audit tests **passed on the user's WSL**.
