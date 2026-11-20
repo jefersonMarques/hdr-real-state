@@ -282,7 +282,7 @@ def export_photo(
         format="JPEG",
         quality=98,
         subsampling=0,
-        optimize=True,
+        optimize=False,
         icc_profile=SRGB_PROFILE,
     )
     imwrite(
