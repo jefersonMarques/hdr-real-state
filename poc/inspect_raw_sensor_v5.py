@@ -23,6 +23,17 @@ def sensor_channel_statistics(
     normalized = (values.astype(np.float32) - black_level) / (
         white_level - black_level
     )
+    above_white = values[values >= white_level]
+    sampled_max = int(np.max(values))
+
+    dominant_high_code = None
+    dominant_high_fraction = 0.0
+
+    if above_white.size > 0:
+        unique_codes, code_counts = np.unique(above_white, return_counts=True)
+        dominant_index = int(np.argmax(code_counts))
+        dominant_high_code = int(unique_codes[dominant_index])
+        dominant_high_fraction = float(code_counts[dominant_index] / values.size)
 
     return {
         "sample_count": int(normalized.size),
@@ -34,6 +45,13 @@ def sensor_channel_statistics(
         "near_black_fraction": float(np.mean(normalized <= 0.005)),
         "near_white_fraction": float(np.mean(normalized >= 0.995)),
         "sensor_saturated_fraction": float(np.mean(normalized >= 1.0)),
+        "above_declared_white_fraction": float(np.mean(values >= white_level)),
+        "strictly_above_declared_white_fraction": float(np.mean(values > white_level)),
+        "sampled_raw_p99": float(np.percentile(values, 99)),
+        "sampled_raw_max": sampled_max,
+        "sampled_max_code_fraction": float(np.mean(values == sampled_max)),
+        "dominant_high_code": dominant_high_code,
+        "dominant_high_code_sample_fraction": dominant_high_fraction,
     }
 
 
@@ -143,6 +161,7 @@ def inspect_raw_sensor(path: Path, sample_stride: int = 8) -> dict:
             "cfa_color_description": str(raw.color_desc),
             "black_levels": blacks,
             "white_levels": whites,
+            "libraw_global_white_level": int(raw.white_level),
             "sampling_stride": sample_stride,
             "channels": statistics,
         }
@@ -180,7 +199,9 @@ def inspect_triplet(photos: Path, output_dir: Path, sample_stride: int) -> dict:
         "shared_reference_camera_wb": list(camera_wb),
         "inputs": results,
         "interpretation": [
-            "Near-white and near-black fractions are measured against each RAW's native sensor levels.",
+            "Near-white and near-black fractions are measured relative to the camera-declared white and black levels.",
+            "The legacy sensor_saturated_fraction denotes samples at or above declared white, not verified physical sensor saturation.",
+            "The dominant high code and sampled maximum can reveal a plateau beyond the declared camera white level; they do not establish the true physical clip threshold.",
             "These global percentages are not yet spatial clipping masks or evidence of HDR fidelity.",
             "Clipped highlights in the middle RAW may still be recoverable from the dark exposure.",
             "Sensor saturation and ISO noise require spatial and camera-aware treatment before fusion.",
