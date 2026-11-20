@@ -165,10 +165,12 @@ def inspect_triplet(photos: Path, output_dir: Path, sample_stride: int) -> dict:
     ):
         print(f"Inspecting sensor: {role} - {path.name}", flush=True)
         inspected = inspect_raw_sensor(path, sample_stride)
-        inspected["role"] = role
-        inspected["relative_exposure"] = float(factor)
-        inspected["exif"] = exif
-        results.append(inspected)
+        results.append({
+            **inspected,
+            "role": role,
+            "relative_exposure": float(factor),
+            "exif": exif,
+        })
 
     if len({tuple(record["visible_mosaic_dimensions"]) for record in results}) != 1:
         raise ValueError("RAW sensor dimensions differ across exposures")
