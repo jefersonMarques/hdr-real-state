@@ -154,6 +154,71 @@ class V5PipelineTests(unittest.TestCase):
         self.assertLess(float(result.max()), 1.0)
         self.assertEqual(encode_srgb_16(result).dtype, np.uint16)
 
+    def test_shadow_contrast_deepens_shadows_without_changing_highlights(self) -> None:
+        levels = np.array([0.01, 0.06, 0.15, 0.50, 2.0], dtype=np.float32)
+        hdr = np.broadcast_to(
+            levels.reshape(1, 5, 1), (48, 5, 3)
+        ).copy()
+
+        baseline = tone_map_linear(
+            hdr, target_mid=0.42, local_strength=0.0, shadow_contrast=0.0
+        )
+        protected = tone_map_linear(
+            hdr, target_mid=0.42, local_strength=0.0, shadow_contrast=0.50
+        )
+
+        self.assertLess(float(protected[0, 0, 0]), float(baseline[0, 0, 0]))
+        self.assertLess(float(protected[0, 1, 0]), float(baseline[0, 1, 0]))
+        np.testing.assert_allclose(
+            protected[0, -1], baseline[0, -1], atol=1e-6
+        )
+        self.assertTrue(np.isfinite(protected).all())
+
+    def test_reduced_target_mid_darkens_interior_without_reversing_lightness(self) -> None:
+        levels = np.linspace(0.02, 1.3, 96, dtype=np.float32)
+        hdr = np.repeat(levels.reshape(8, 12, 1), 3, axis=2)
+        brighter = tone_map_linear(
+            hdr, target_mid=0.42, local_strength=0.0
+        )
+        balanced = tone_map_linear(
+            hdr, target_mid=0.37, local_strength=0.0
+        )
+
+        self.assertLess(float(np.median(balanced)), float(np.median(brighter)))
+        self.assertGreater(float(np.min(np.diff(balanced[:, :, 0].ravel()))), 0.0)
+
+    def test_shadow_contrast_rejects_out_of_range_strength(self) -> None:
+        hdr = np.full((32, 48, 3), 0.2, dtype=np.float32)
+
+        for strength in (-0.1, 0.96):
+            with self.subTest(strength=strength):
+                with self.assertRaisesRegex(ValueError, "Shadow contrast"):
+                    tone_map_linear(hdr, shadow_contrast=strength)
+
+    def test_tone_map_report_records_render_controls(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            hdr_path = root / "hdr.npy"
+            np.save(hdr_path, np.full((64, 96, 3), 0.2, dtype=np.float32))
+
+            report = tone_map_file(
+                hdr_path,
+                root / "balanced",
+                target_mid=0.37,
+                local_strength=0.15,
+                shadow_contrast=0.50,
+            )
+
+            self.assertEqual(
+                report["tone_mapping"],
+                {
+                    "target_mid": 0.37,
+                    "local_strength": 0.15,
+                    "shadow_contrast": 0.50,
+                },
+            )
+            self.assertTrue(Path(report["tiff"]).is_file())
+
     def test_export_creates_24_megapixel_equivalent_dimensions(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
