@@ -14,6 +14,7 @@ The repository contains:
 
 - [AFUNet RAW evaluation](poc/hdr_afunet.py): experimental neural model inference using an external upstream checkout and checkpoint; outputs floating-point HDR TIFF and an initial JPEG preview
 - [HDR diagnostic comparison](poc/hdr_diagnostics.py): reads exposure metadata, develops the three RAWs, produces a simple conventional HDR baseline and re-renders the previously saved neural TIFF with the same tone map
+- [Window detail recovery experiment](poc/hdr_window_recovery.py): tests a source-guided highlight mask using saved underexposed and reference previews, without rerunning AFUNet or replacing the HDR pipeline
 - [Quality validation guide](docs/quality-validation.md): exact WSL commands, comparison workflow, known limitations and decision gate
 - [Tests](tests/): synthetic tests for neural tiling, exposure weighting and preview conversion
 - [Research and license review](docs/open-source-evaluation.md): external open-source candidates
