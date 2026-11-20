@@ -4,14 +4,14 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "poc"))
 
-from prepare_triplet_v4 import calculate_size, discover_triplet
+from prepare_triplet_v4 import calculate_size, develop_raw, discover_triplet
 from flux_triplet_v4 import load_references, quality_diagnostics, save_outputs
 
 
@@ -58,6 +58,31 @@ class TripletNeuralV4Tests(unittest.TestCase):
     def test_calculate_size_preserves_aspect_ratio(self) -> None:
         self.assertEqual(calculate_size(6024, 4024, 768), (768, 512))
         self.assertEqual(calculate_size(6024, 4024, 1024), (1024, 672))
+
+    def test_calculate_size_avoids_float_rounding(self) -> None:
+        self.assertEqual(calculate_size(6024, 4024, 1024), (1024, 672))
+        self.assertEqual(calculate_size(4024, 6024, 1024), (672, 1024))
+        self.assertEqual(calculate_size(6000, 4000, 768), (768, 512))
+
+    def test_rawpy_receives_white_balance_as_list(self) -> None:
+        raw_camera = MagicMock()
+        raw_camera.__enter__.return_value = raw_camera
+        raw_camera.postprocess.return_value = np.full(
+            (48, 64, 3), 32768, dtype=np.uint16
+        )
+        fake_rawpy = SimpleNamespace(
+            imread=lambda path: raw_camera,
+            ColorSpace=SimpleNamespace(sRGB=1),
+        )
+
+        with patch.dict(sys.modules, {"rawpy": fake_rawpy}):
+            image = develop_raw(Path("example.ARW"), (2.0, 1.0, 1.5, 1.0))
+
+        self.assertEqual(image.size, (64, 48))
+        self.assertEqual(
+            raw_camera.postprocess.call_args.kwargs["user_wb"],
+            [2.0, 1.0, 1.5, 1.0],
+        )
 
     def test_references_are_loaded_in_fixed_order(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
