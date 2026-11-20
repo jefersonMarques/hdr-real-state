@@ -54,3 +54,7 @@ Test 30–50 real interiors with three RAW files each. Compare AFUNet and HDR-Tr
 ## Stage 2: offline desktop product
 
 Choose and license a suitable model, implement the Qt GUI, automatic bracket grouping, color management, neural white-balance enhancement, ONNX acceleration, batch exports and a tested Windows installer with bundled weights.
+
+## Current gate: neural model qualification
+
+The real-estate HDR v2 results have not established a neural quality advantage. Further tuning of the hybrid preview is paused pending a model-only comparison of the three upstream AFUNet checkpoints (Kalantari, Hu, Tel) versus the conventional HDR, with the same output tone mapper. The benchmark tool, instructions, known caveats and decision criteria are in [neural-qualification.md](neural-qualification.md). Only after this comparison should another model architecture, camera-to-LDR input calibration or specialized fine-tuning be considered. No pretrained-model superiority is claimed before local results are submitted.
