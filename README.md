@@ -18,6 +18,7 @@ The first real-estate benchmark showed that three AFUNet neural HDR checkpoints 
 - [First RTX 4060 photo-editor trial: DeepLPF](docs/v3-first-model-test.md)
 - [Editorial AI benchmark script](poc/benchmark_editor_v3.py)
 - [Pretrained 3D LUT neural editor](poc/benchmark_3dlut_v3.py): independent full-resolution photo color/tone AI without legacy CUDA extensions; [WSL validation commands](docs/v3-adaptive-lut-test.md)
+- [FLUX.2 Klein experiment](poc/test_flux_klein_edit.py): generative image editing evaluation with 8 GB GPU offloading; [WSL instructions](docs/v3-flux-klein-test.md)
 - [Project continuation and decisions](AGENTS.md)
 
 The DeepLPF model is **not bundled**. Its first RTX 4060 run succeeded at 1024 × 684, but its output failed the visual quality gate against Photoshop; see [DeepLPF evaluation and metrics](docs/v3-deeplpf-evaluation.md). A full-resolution run exceeded 8 GB VRAM. The current priority is a different learned photographic editor (adaptive color/LUT with local control) rather than further hand-written postprocessing. Prior experiments remain unchanged.
