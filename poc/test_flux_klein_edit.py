@@ -105,12 +105,15 @@ def run_editor(
         ).images[0]
 
     output_directory.mkdir(parents=True, exist_ok=True)
+    prepared_input = output_directory / "flux_input.png"
     output_image = output_directory / "flux_edit.png"
+    image.save(prepared_input)
     result.save(output_image)
 
     report = {
         "model_id": MODEL_ID,
         "input_path": str(input_path),
+        "prepared_input_path": str(prepared_input),
         "output_path": str(output_image),
         "resolution": [image.width, image.height],
         "seed": seed,
