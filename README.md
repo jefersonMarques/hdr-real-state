@@ -19,7 +19,7 @@ The first real-estate benchmark showed that three AFUNet neural HDR checkpoints 
 - [Editorial AI benchmark script](poc/benchmark_editor_v3.py)
 - [Project continuation and decisions](AGENTS.md)
 
-The DeepLPF model is **not bundled**; the first test uses its external GitHub checkout and pretrained weights. Neither v3 editor image quality nor WSL execution has been validated yet. Prior experiments and results remain unchanged.
+The DeepLPF model is **not bundled**. Its first RTX 4060 run succeeded at 1024 × 684, but its output failed the visual quality gate against Photoshop; see [DeepLPF evaluation and metrics](docs/v3-deeplpf-evaluation.md). A full-resolution run exceeded 8 GB VRAM. The current priority is a different learned photographic editor (adaptive color/LUT with local control) rather than further hand-written postprocessing. Prior experiments remain unchanged.
 
 The repository contains:
 
