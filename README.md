@@ -6,9 +6,20 @@ Target workflow: three bracketed camera RAW files (underexposed, reference, over
 
 ## Project status
 
-**Stage 0: experimental neural proof of concept, with a new conventional HDR quality baseline. Not yet a production editor or an installer.**
+**v3 design and first neural photo-editor evaluation are ready to test. This is not yet a production editor, completed neural editor pipeline, or an installer.**
 
 A first full-resolution Sony ARW neural test ran locally on an RTX 4060 through PyTorch CUDA. The photographed bedroom's generated preview was substantially underexposed and the window lacked useful exterior contrast. The cause has not been isolated; the neural TIFF, original brackets and preview mapping must be compared before choosing a correction.
+
+## New direction: neural photo editor
+
+The first real-estate benchmark showed that three AFUNet neural HDR checkpoints did not outperform the conventional HDR against the Photoshop reference. Kalantari/Tel outputs showed significant exposure and color problems; the Hu checkpoint degenerated into a nearly uniform image. Instead of continuing HDR-only model adjustments, the project now tests a **photo-editing AI on a reliable conventional HDR render**.
+
+- [v3 architecture, constraints and roadmap](docs/v3-architecture.md)
+- [First RTX 4060 photo-editor trial: DeepLPF](docs/v3-first-model-test.md)
+- [Editorial AI benchmark script](poc/benchmark_editor_v3.py)
+- [Project continuation and decisions](AGENTS.md)
+
+The DeepLPF model is **not bundled**; the first test uses its external GitHub checkout and pretrained weights. Neither v3 editor image quality nor WSL execution has been validated yet. Prior experiments and results remain unchanged.
 
 The repository contains:
 
