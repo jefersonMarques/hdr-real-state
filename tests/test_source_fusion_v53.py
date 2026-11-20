@@ -214,6 +214,7 @@ class SourceFusionV53Tests(unittest.TestCase):
             )
             self.assertGreater(render["exterior_mask_fraction"], 0.01)
             self.assertTrue(Path(render["exterior_mask_preview"]).exists())
+            self.assertTrue(Path(render["exterior_mask_overlay"]).exists())
 
 
 if __name__ == "__main__":
