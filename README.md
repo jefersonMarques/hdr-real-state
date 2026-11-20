@@ -6,9 +6,17 @@ Target workflow: three bracketed camera RAW files (underexposed, reference, over
 
 ## Project status
 
-**V5 photographic source-fusion baseline is published on `main` for user-side validation. It is not a trained neural HDR model or a verified professional final export. V4 multi-reference FLUX and earlier pipelines remain available as comparisons.**
+**V5.2 RAW-sensor-guided HDR fusion is now available as an opt-in experiment on `main`. The V5/V5.1 camera RAW baseline remains unchanged by default. Both are classical photographic fusion; neither is the final neural retoucher or a verified professional export.**
 
 A first full-resolution Sony ARW neural test ran locally on an RTX 4060 through PyTorch CUDA. The photographed bedroom's generated preview was substantially underexposed and the window lacked useful exterior contrast. The cause has not been isolated; the neural TIFF, original brackets and preview mapping must be compared before choosing a correction.
+
+## Current experiment: Sony RAW confidence fusion (V5.2)
+
+The actual camera audits of three Sony ARW exposures found a strongly repeated **RAW code 16372** beyond the camera-declared white level 15360, near LibRaw's global white 16380. We cannot equate 15360 with confirmed physical clipping.
+
+The new optional [V5.2 RAW-guided fusion](poc/merge_hdr_raw_v52.py) generates per-Bayer-block confidence masks directly from the camera sensor mosaics, aligns them with the developed linear RAW RGB frames and uses them to weight the three exposures. It preserves the baseline V5 output and existing settings. The new [seven tests](tests/test_raw_guided_v52.py) and [WSL comparison guide](docs/v52-raw-guided-hdr.md) are published but have **not yet been executed on the user's original RAWs**.
+
+**Important:** this is sensor-guided HDR merging of decoded linear RGB, **not** direct CFA sample fusion and **not a trained neural model**. It may improve source selection but cannot recreate highlights already lost during RAW development. Use new output folders and compare V5.1 versus V5.2 on exactly the same photo session.
 
 ## Native RAW sensor diagnostics (current V5.2 preparation)
 
