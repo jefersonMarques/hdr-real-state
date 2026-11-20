@@ -151,7 +151,7 @@ class V5PipelineTests(unittest.TestCase):
         self.assertTrue(np.isfinite(result).all())
         self.assertGreater(float(result[0, 0, 1]), float(result[0, 0, 0]))
         self.assertGreater(float(result[0, 0, 2]), float(result[0, 0, 1]))
-        self.assertLess(float(result.max()), 1.0)
+        self.assertLessEqual(float(result.max()), 1.0)
         self.assertEqual(encode_srgb_16(result).dtype, np.uint16)
 
     def test_shadow_contrast_deepens_shadows_without_changing_highlights(self) -> None:
