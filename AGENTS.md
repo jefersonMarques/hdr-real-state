@@ -27,7 +27,7 @@ First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.m
 - `docs/v3-first-model-test.md`: executable first trial with **external** DeepLPF pretrained model, isolated editor environment and RTX 4060.
 - `poc/prepare_editor_input.py`: prepare a bounded RGB image for memory-limited GPU inference, keeping existing source images intact.
 
-**DeepLPF's pretrained checkpoint loaded on CUDA, but the first native-resolution attempt hit a GPU out-of-memory exception on an 8 GB RTX 4060. No complete v3 inference output or photographic quality improvement has been verified yet.** The next test uses a 1024-pixel input, without overwriting previous images. External models, weights and user photos are intentionally not committed.
+**DeepLPF was successfully executed at 1024 × 684 on the RTX 4060. The first real-estate quality gate FAILED:** approximate MAE vs Photoshop was 42.3678 for conventional vs 43.0569 for DeepLPF (reference resized, unregistered), and visual ceiling/window/color quality remained deficient. The original full-resolution run ran out of VRAM. See [docs/v3-deeplpf-evaluation.md](docs/v3-deeplpf-evaluation.md). The next step is to validate a different learned editor, not hand-tune DeepLPF with custom masks. External models, weights and user photos are intentionally not committed.
 
 ## Engineering constraints
 
@@ -45,10 +45,10 @@ First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.m
 
 ## Next work after the current user runs the v3 test
 
-1. Review `output/v3-editor-review-01/comparison.jpg`, `report.json` and the resulting DeepLPF edited PNG.
-2. If baseline beats the neural editor, classify it as a negative result; do not cover it with new code-based presets.
-3. Evaluate a second candidate (adaptive 3D LUT / HDRNet) using the same image and professional reference.
-4. When one architecture demonstrates benefit, prepare a licensed multi-property paired dataset, with train/validation/test split by property.
-5. Only then implement a stable photo-editor service and future desktop GUI.
+1. Treat the first DeepLPF pretrained trial as a negative result in this real-estate scene, documented in `docs/v3-deeplpf-evaluation.md`.
+2. Evaluate a second learned retoucher (modern image-adaptive 3D LUT with confirmed pretrained checkpoint) on the identical conventional baseline and Photoshop reference, using a separate environment if required.
+3. Verify that the model weights and training data have redistribution rights; do not use research-only VeraRetouch pretrained weights commercially.
+4. If pretrained retouching still fails, gather licensed professionally edited scene pairs and assess specialized training; use a property-level held-out split.
+5. Implement a final high-resolution editor and Windows GUI only after measurable quality improvement.
 
 This file is the project's continuation context, not evidence that unexecuted work has passed tests.
