@@ -29,6 +29,8 @@ First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.m
 - `docs/v3-first-model-test.md`: executable first trial with **external** DeepLPF pretrained model, isolated editor environment and RTX 4060.
 - `poc/prepare_editor_input.py`: prepare a bounded RGB image for memory-limited GPU inference, keeping existing source images intact.
 - `poc/test_flux_klein_edit.py`: experimental FLUX.2 Klein image-to-image generative editing using a separate `.venv-flux`, 768px bounded input and sequential CPU offload; compare `flux_input.png` with `flux_edit.png`, do not assume output is faithful to a property.
+- `poc/flux_klein_fidelity.py`: separate experimental Flux2KleinInpaintPipeline source-initialized run with two explicit denoising strengths, all-white edit mask, optional Photoshop appearance reference, and output difference maps.
+- `docs/v3-flux-fidelity.md`: commands, quality gate and secondary reference risks. Reuse the same prepared 1008×672 input. Confirm current Diffusers supports this inpaint pipeline; actual 4B WSL run is pending.
 - `poc/export_flux_fullres.py`: optional, source-resolution photograph export guided by smooth constrained changes inferred from the low-resolution FLUX edit; takes original full-resolution float32 conventional HDR and highlight mask to preserve 16-bit tonal precision. This does not run native-resolution FLUX or generate missing fine detail.
 - `docs/v3-flux-fullres-export.md`: user-run export, side-by-side quality check and limitations.
 - `docs/v3-flux-klein-test.md`: executable test and safety/memory limitations.
@@ -49,12 +51,12 @@ First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.m
 - Never claim a GPU running implies useful neural photographic editing.
 - Reject fabricated scenery/objects, unlabeled hallucination and structural geometric modifications.
 
-## Next work: validate actual generative FLUX image editing on WSL
+## Next work: validate FLUX source-initialized conservative editing
 
-1. Treat the first DeepLPF pretrained trial as a negative result in this real-estate scene, documented in `docs/v3-deeplpf-evaluation.md`.
-2. Evaluate a second learned retoucher (modern image-adaptive 3D LUT with confirmed pretrained checkpoint) on the identical conventional baseline and Photoshop reference, using a separate environment if required.
-3. Verify that the model weights and training data have redistribution rights; do not use research-only VeraRetouch pretrained weights commercially.
-4. If pretrained retouching still fails, gather licensed professionally edited scene pairs and assess specialized training; use a property-level held-out split.
-5. Implement a final high-resolution editor and Windows GUI only after measurable quality improvement.
+1. Run the 0.50/0.75 true-strength comparison on the existing FLUX 1024-side source using `poc/flux_klein_fidelity.py`; this is a new inpaint pipeline, not the earlier reference-conditioning experiment.
+2. Inspect real leaves, window frames, shadows, wood, geometry and ceiling against the original RAW-developed image and Photoshop reference. Report per-image metrics descriptively, without claiming structural verification.
+3. If necessary, run an **independent** optional Photoshop appearance-reference comparison; references can transfer unwanted lighting and objects.
+4. Keep the previous FLUX source/edit and export files unchanged. Do not substitute strength with inference step count.
+5. Only after faithful low-resolution results should a high-resolution model-rendering strategy be approved and implemented.
 
 This file is the project's continuation context, not evidence that unexecuted work has passed tests.
