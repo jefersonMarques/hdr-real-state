@@ -17,6 +17,18 @@ V5:
 
 Continue exclusively on `main`, preserving V2–V4 experiments. Do not create branches, PRs or GitHub Actions.
 
+## V5 RAW sensor audit and next V5.2 quality gate (2026-11-20)
+
+The user's new Sony RAWs were successfully processed by V5, but user correctly requested exploiting **RAW sensor data**, not merely treated-as-image RGB. The existing `load_linear_raw` is 16-bit `rawpy.postprocess(no_auto_bright=True, gamma=(1,1))` then float32 linear developed sRGB — not native sensor mosaic fusion.
+
+- `poc/inspect_raw_sensor_v5.py`: read-only audit of RAW CFA native values, black levels and white/saturation thresholds for all three original camera RAWs, without demosaicing, resampling or changing the existing V5 output.
+- `tests/test_raw_sensor_v5.py`: five synthetic regression tests for CFA sampling, per-channel thresholds and report creation; WSL actual Sony camera test pending.
+- `docs/v5-raw-sensor-audit.md`: user-run procedure and V5.2 sensor-source fusion engineering risks/gates.
+- `tests/test_v5_pipeline.py`: corrected an overly strict assertion requiring maximum pixel value `<1`; exactly `1` is allowed by the existing tone mapper. This fixes **a test**, not clipping.
+- User's current bracket: `DSC01132.ARW`(-1 EV), `DSC01134.ARW`(0 EV), `DSC01133.ARW`(+1 EV). The successful V5 photo output is preserved.
+
+**Critical risk:** CFA/Bayer mosaics cannot be arbitrarily fractionally translated and merged as if they were color RGB; channel phase, white/black levels, orientation, camera color matrices and scene-linear sensor gain all matter. First inspect actual sensor audit and compare against existing photo; only then enable separate opt-in RAW-aware reliability masks and a camera-aware fusion pipeline. Do not silently change the working V5. No claim of a functioning V5.2 native sensor fusion yet.
+
 ## V5.1 shadow-contrast trial and new photo bracket (2026-11-20)
 
 User verified the first V5 HDR output on the original room: it was closer to the Photoshop reference but washed out; median brightness 0.6766 vs reference 0.6402, with far fewer dark regions (0.0042 vs 0.1266). Preserve the reliable V5 source merge and test conservative tone-map changes rather than rebuilding the HDR network.
