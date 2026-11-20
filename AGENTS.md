@@ -17,6 +17,17 @@ V5:
 
 Continue exclusively on `main`, preserving V2–V4 experiments. Do not create branches, PRs or GitHub Actions.
 
+## V5.1 shadow-contrast trial and new photo bracket (2026-11-20)
+
+User verified the first V5 HDR output on the original room: it was closer to the Photoshop reference but washed out; median brightness 0.6766 vs reference 0.6402, with far fewer dark regions (0.0042 vs 0.1266). Preserve the reliable V5 source merge and test conservative tone-map changes rather than rebuilding the HDR network.
+
+- `poc/v5_core.py`: optional `target_mid`, `local_strength`, `shadow_contrast` exposed through `poc/tone_map_v5.py`. Original defaults are unchanged.
+- `tests/test_v5_pipeline.py`: four extra parameter and shadow-depth regression tests. **Their WSL execution is pending.**
+- New photographs were copied by user into `/opt/hdr-real-state/photos`; filenames, exposure metadata and count **have not been inspected** by this assistant. Verify three matching RAWs, then run V5 into a new named output folder; never overwrite previous scenes.
+- New full run and no-Photoshop-reference comparison: [docs/v5-real-hdr-pipeline.md](docs/v5-real-hdr-pipeline.md), V5.1 section.
+- The prior expert `photos/DSC01858.jpg` applies only to the previous room unless explicitly proven to be the new scene; do not compare different scenes as ground truth.
+- V5.1 is a **classical HDR photograph**, not true learned neural multi-exposure fusion. The future commercial product still needs authentic neural editing validated on paired RAW/expert data.
+
 ## Current approved architecture — V4 (2026-11-20)
 
 **Single-branch rule: work directly on `main` only. Do not create branches, pull requests, or GitHub Actions unless explicitly authorized.**
