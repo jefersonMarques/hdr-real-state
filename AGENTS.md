@@ -4,20 +4,26 @@
 
 Build an offline-first, commercial real-estate **AI photo editor** for three exposure-bracketed camera RAWs. The product needs true photographic enhancements learned by neural models; a classical HDR merger with a manually written preset is **not** an acceptable AI product.
 
-## Current approved architecture
+## Current approved architecture — V4 (2026-11-20)
 
-**v3 architectural direction approved on 2026-11-20:**
-1. Create a faithful RAW/linear HDR base and preserve its geometry and external window information.
-2. Feed an appropriately rendered base into a trained **neural photographic editing** model.
-3. Preserve original furniture, walls, floors, doors, windows, exterior views and property defects; no invented or removed objects.
-4. Compare AI output with an unmodified non-neural baseline and professionally edited examples.
-5. Continue development only after visual-quality evidence supports the neural contribution.
+**Single-branch rule: work directly on `main` only. Do not create branches, pull requests, or GitHub Actions unless explicitly authorized.**
 
-Source of truth: [docs/v3-architecture.md](docs/v3-architecture.md).
-First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.md).
+User decision: **do not use a flawed conventional HDR output as the input to the neural image editor**. Instead, decode the original three camera RAWs separately and let an AI model see all three exposures, including real exterior detail from the darkest bracket and interior shadow information from the brightest.
+
+- Short-term experiment: [docs/v4-triplet-neural-hdr.md](docs/v4-triplet-neural-hdr.md) — FLUX.2 Klein multi-reference conditioning with three independent camera RAW-derived display images.
+- Long-term target: camera-calibrated and geometrically aligned, exposure-aware neural fusion + photographic editing, with faithful source-derived details, controlled color/tone, and genuine high-resolution export.
+- Critical distinction: **FLUX multi-reference image generation is not a HDR-trained fusion model.** A good-looking 768px FLUX result cannot prove detail authenticity or native 24 MP quality.
+- Do not copy Photoshop reference content into the camera geometry or invent leaves, window views, furniture, lights, shadows, or material colors.
+- Retain all v2/v3 experiments as comparisons; the new V4 model must **not** load an existing conventional HDR as its neural input.
+
+The older [v3 architecture](docs/v3-architecture.md) remains historical documentation and is no longer the current processing route.
 
 ## Current actual implementation
 
+- `poc/prepare_triplet_v4.py`: V4 EXIF-sorted, independently developed three-RAW camera references; same WB, no HDR merge.
+- `poc/flux_triplet_v4.py`: V4 actual FLUX.2 Klein call with a three-image list for reference conditioning, experimental.
+- `tests/test_triplet_v4.py`: synthetic triplet ordering, geometry, manifest and provenance tests; user WSL run pending.
+- `docs/v4-triplet-neural-hdr.md`: current architecture, run commands, quality gates and implementation sequence.
 - `poc/hdr_afunet.py`: historical AFUNet HDR model experiment.
 - `poc/hdr_diagnostics.py`: linear RAW baseline and comparison.
 - `poc/hdr_window_recovery.py`: historical JPEG-level source highlight experiment.
@@ -51,12 +57,13 @@ First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.m
 - Never claim a GPU running implies useful neural photographic editing.
 - Reject fabricated scenery/objects, unlabeled hallucination and structural geometric modifications.
 
-## Next work: validate FLUX source-initialized conservative editing
+## Next work: V4 three-RAW evaluation on the RTX 4060
 
-1. Run the 0.50/0.75 true-strength comparison on the existing FLUX 1024-side source using `poc/flux_klein_fidelity.py`; this is a new inpaint pipeline, not the earlier reference-conditioning experiment.
-2. Inspect real leaves, window frames, shadows, wood, geometry and ceiling against the original RAW-developed image and Photoshop reference. Report per-image metrics descriptively, without claiming structural verification.
-3. If necessary, run an **independent** optional Photoshop appearance-reference comparison; references can transfer unwanted lighting and objects.
-4. Keep the previous FLUX source/edit and export files unchanged. Do not substitute strength with inference step count.
-5. Only after faithful low-resolution results should a high-resolution model-rendering strategy be approved and implemented.
+1. Pull the latest `main` and run `tests/test_triplet_v4.py` in `.venv`.
+2. Run `poc/prepare_triplet_v4.py` on exactly three original RAWs in `photos/` (no conventional HDR is created).
+3. Run `poc/flux_triplet_v4.py` in `.venv-flux` on the three prepared reference images, with GPU offload.
+4. Compare `neural_triplet.png` with under/reference/over originals and the Photoshop retouch. Inspect exact real leaves, sunlight, geometry and color. GPU activity or high aesthetic quality alone does not pass.
+5. If generative multi-reference editing loses sensor-authentic details, evaluate a **trained three-exposure correspondence/fusion + retouch network**, not an HDR JPEG input.
+6. Validate original-resolution sensor fidelity and licensed JPEG/TIFF export only after robust multi-scene testing.
 
 This file is the project's continuation context, not evidence that unexecuted work has passed tests.
