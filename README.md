@@ -13,6 +13,7 @@ A first full-resolution Sony ARW neural test ran locally on an RTX 4060 through 
 The repository contains:
 
 - [AFUNet RAW evaluation](poc/hdr_afunet.py): experimental neural model inference using an external upstream checkout and checkpoint; outputs floating-point HDR TIFF and an initial JPEG preview
+- [Independent AFUNet checkpoint benchmark](poc/benchmark_afunet.py): compare Kalantari, Hu and Tel weights without hybrid masks, using the same conventional HDR and optional Photoshop reference; see [qualification guide](docs/neural-qualification.md)
 - [Pipeline v2](poc/hdr_pipeline_v2.py): auto-orders three camera RAWs using actual EXIF exposure, runs the neural model, creates linear conventional HDR and blends protected real highlights into the HDR working image **before** tone mapping; see [WSL instructions and limitations](docs/pipeline-v2.md)
 - [HDR diagnostic comparison](poc/hdr_diagnostics.py): reads exposure metadata, develops the three RAWs, produces a simple conventional HDR baseline and re-renders the previously saved neural TIFF with the same tone map
 - [Window detail recovery experiment](poc/hdr_window_recovery.py): tests a source-guided highlight mask using saved underexposed and reference previews, without rerunning AFUNet or replacing the HDR pipeline
