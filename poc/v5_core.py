@@ -198,6 +198,7 @@ def fusion_chunk(
     inputs: tuple[np.ndarray, np.ndarray, np.ndarray],
     factors: tuple[float, float, float],
     validity: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
+    sensor_confidence: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
 ) -> np.ndarray:
     if len({item.shape for item in inputs}) != 1:
         raise ValueError("Cannot merge images with inconsistent dimensions")
@@ -209,6 +210,18 @@ def fusion_chunk(
         validity = tuple(
             np.ones(inputs[0].shape[:2], dtype=bool) for _ in inputs
         )
+
+    if sensor_confidence is not None:
+        if len(sensor_confidence) != 3:
+            raise ValueError("Three sensor-confidence arrays are required")
+
+        if any(
+            confidence.shape != inputs[0].shape[:2]
+            or not np.isfinite(confidence).all()
+            or np.any((confidence < 0.0) | (confidence > 1.0))
+            for confidence in sensor_confidence
+        ):
+            raise ValueError("Sensor confidence must be finite, normalized and aligned")
 
     normalized_reference = inputs[1].astype(np.float32) / factors[1]
     reference_max = np.max(inputs[1], axis=2)
@@ -226,6 +239,9 @@ def fusion_chunk(
         shadows = np.clip((maximum - 0.008) / 0.07, 0.0, 1.0)
         highlights = np.clip((0.985 - maximum) / 0.08, 0.0, 1.0)
         weight = shadows * highlights * valid
+
+        if sensor_confidence is not None:
+            weight *= sensor_confidence[index]
 
         candidate = pixels / factor
 
