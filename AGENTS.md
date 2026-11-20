@@ -17,6 +17,19 @@ V5:
 
 Continue exclusively on `main`, preserving V2–V4 experiments. Do not create branches, PRs or GitHub Actions.
 
+## V5.2 opt-in native sensor-guided merge (2026-11-20)
+
+The user's third real Sony RAW audit confirmed that all four CFA indices and all three brackets share a repeated upper code **16372**, which is above camera-declared white `15360` and near LibRaw global white `16380`; rare maximum `16596`. It is a **possible sensor clipping plateau**, not a validated physical saturation limit. The seven RAW audit tests **passed on the user's WSL**.
+
+A separate opt-in V5.2 implementation was published **directly on `main`**:
+- `poc/merge_hdr_raw_v52.py`: reads original ARW Bayer mosaics, detects a supported high-code plateau, creates 2×2 CFA-block confidence masks and aligns them to existing original RAW-developed linear RGB frames before fusion. Aborts on unsupported orientation, geometry or ambiguous clipping plateaus.
+- `poc/v5_core.py`: `fusion_chunk(..., sensor_confidence=None)` optionally multiplies the weights; the existing V5 call and default behavior are unchanged.
+- `tests/test_raw_guided_v52.py`: seven new synthetic regression tests for plateau selection, color-phase masks, zero/one confidence, and independent output. **New tests pending execution in WSL.**
+- `docs/v52-raw-guided-hdr.md`: run the new fusion from existing `output/v5-new-photos-01/triplet_v5.json`, tone map using the same V5.1 settings, export full resolution, and compare with original V5.1 output of the **same scene**.
+- **Limitations:** confidence is a heuristic, not a calibrated sensor noise model; fused pixels are still LibRaw-developed linear RGB, not native mosaic fusion; colored highlight information may be lost during development. No trained AI is applied in V5.2 and quality improvements are not yet verified.
+
+Keep previous V5 and V5.1 outputs unchanged; no branches, PRs, Actions, or raw photo commits.
+
 ## Sony RAW plateau finding — fidelity blocker (2026-11-20)
 
 The user's three real Sony `DSC01132.ARW`, `DSC01134.ARW`, `DSC01133.ARW` audits succeeded; full native mosaic dimensions `4024 x 6024`, 2x2 Bayer, sensor black `512` and **camera-declared white `15360`**. Several CFA color-channel p99 values normalize to `1.068157315`, consistent with raw code ~`16372`; this exceeds the declared threshold. The old `sensor_saturated_fraction` is **not proven physical clipping**, only the fraction reaching/exceeding camera-declared white. Do not implement binary clipping confidence from this number without checking the upper-code histogram.
@@ -102,12 +115,13 @@ The older [v3 architecture](docs/v3-architecture.md) remains historical document
 - Never claim a GPU running implies useful neural photographic editing.
 - Reject fabricated scenery/objects, unlabeled hallucination and structural geometric modifications.
 
-## Next work: V5 real RAW validation on WSL
+## Next work: validate RAW-guided V5.2 opt-in against V5.1
 
-1. Run `git pull --ff-only`, verify `cv2` and run `tests/test_v5_pipeline.py` in the existing `.venv`.
-2. Prepare `output/v5-01` with exactly three original RAWs (not previous HDR JPEGs).
-3. Run the V5 translation merge, tone mapping and full-resolution final export in sequence; use a fresh output folder for retries.
-4. Inspect full-size foliage, frame alignment, neutral walls, shadows, color and local-tone halos against the Photoshop edit; submit `comparison.jpg`, `report.json` and `merge_report.json`.
-5. **Do not assume V5 equals AI fusion.** If a reliable baseline is established, research a true learned three-bracket fusion/retouch network that receives calibrated source frames, not pre-composited low-resolution HDR.
+1. User runs existing V5 tests, all seven sensor-audit tests, and seven new `tests/test_raw_guided_v52.py` tests on the WSL Python `.venv`.
+2. User runs `poc/merge_hdr_raw_v52.py` on the existing V5 manifest; this reads **three original ARWs** and their existing original RAW linear RGB arrays, never a pre-composited HDR image.
+3. Check `output/v52-raw-guided-01/merge_report.json` for detected per-channel clip codes, actual camera orientation, registration confidence and fraction of pixels where all exposures are unreliable.
+4. Tone map/export using **the same settings** as the V5.1 baseline and benchmark identical camera scene V5.1 vs V5.2. Inspect foliage, windows and dark noise at 100%.
+5. Reject V5.2 if it adds halos, blocks, noise, cast or detail loss; only after photographic evidence should the default merge be reconsidered.
+6. True high-fidelity RAW HDR beyond this PoC needs validated camera-space color pipeline, noise model, geometric/optical deghosting and eventually a separately trained three-exposure neural editor.
 
 This file is the project's continuation context, not evidence that unexecuted work has passed tests.
