@@ -318,6 +318,7 @@ def tone_map_linear(
     hdr: np.ndarray,
     target_mid: float = 0.42,
     local_strength: float = 0.25,
+    shadow_contrast: float = 0.0,
 ) -> np.ndarray:
     import cv2
 
@@ -326,6 +327,9 @@ def tone_map_linear(
 
     if not 0 <= local_strength <= 0.75:
         raise ValueError("Local strength must be within [0, 0.75]")
+
+    if not 0 <= shadow_contrast <= 0.95:
+        raise ValueError("Shadow contrast must be within [0, 0.95]")
 
     if not np.isfinite(hdr).all():
         raise ValueError("HDR image contains nonfinite pixels")
@@ -361,7 +365,15 @@ def tone_map_linear(
     rendered = pixels * scale[..., None]
     peak = np.max(rendered, axis=2, keepdims=True)
     rendered /= np.maximum(peak, 1.000001)
-    return np.clip(rendered, 0.0, 1.0).astype(np.float32)
+    rendered = np.clip(rendered, 0.0, 1.0)
+
+    if shadow_contrast > 0.0:
+        rendered_luma = np.sum(rendered * LUMINANCE_WEIGHTS, axis=2)
+        shadow_range = np.clip(1.0 - rendered_luma / 0.36, 0.0, 1.0)
+        toe_factor = 1.0 - shadow_contrast * np.square(shadow_range)
+        rendered *= toe_factor[..., None]
+
+    return rendered.astype(np.float32)
 
 
 def encode_srgb_16(linear: np.ndarray) -> np.ndarray:
@@ -374,7 +386,13 @@ def encode_srgb_16(linear: np.ndarray) -> np.ndarray:
     return np.uint16(np.round(encoded * 65535.0))
 
 
-def tone_map_file(hdr_path: Path, output_dir: Path) -> dict:
+def tone_map_file(
+    hdr_path: Path,
+    output_dir: Path,
+    target_mid: float = 0.42,
+    local_strength: float = 0.25,
+    shadow_contrast: float = 0.0,
+) -> dict:
     preview_path = output_dir / "tone_mapped_preview.jpg"
     tiff_path = output_dir / "tone_mapped_16bit.tiff"
 
@@ -382,7 +400,12 @@ def tone_map_file(hdr_path: Path, output_dir: Path) -> dict:
         raise FileExistsError("A tone-mapping output already exists")
 
     hdr = np.load(hdr_path, mmap_mode="r", allow_pickle=False)
-    mapped = tone_map_linear(hdr)
+    mapped = tone_map_linear(
+        hdr,
+        target_mid=target_mid,
+        local_strength=local_strength,
+        shadow_contrast=shadow_contrast,
+    )
     image_16 = encode_srgb_16(mapped)
     preview = (image_16.astype(np.uint32) * 255 + 32767) // 65535
 
@@ -407,6 +430,11 @@ def tone_map_file(hdr_path: Path, output_dir: Path) -> dict:
         "dimensions": list(image_16.shape[:2]),
         "bits_per_channel": 16,
         "color_space": "sRGB",
+        "tone_mapping": {
+            "target_mid": target_mid,
+            "local_strength": local_strength,
+            "shadow_contrast": shadow_contrast,
+        },
         "limitations": [
             "Local tone mapping requires review for halos on window boundaries.",
             "Highlight regions are not semantically segmented as windows.",
