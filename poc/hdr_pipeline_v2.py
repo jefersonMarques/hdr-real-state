@@ -1,5 +1,6 @@
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from hdr_diagnostics import (
     encode_srgb,
     load_linear_raw,
     read_exposure_factors,
+    exposure_value,
 )
 from hdr_window_recovery import create_highlight_mask
 
@@ -37,8 +39,24 @@ def discover_brackets(directory: Path) -> tuple[tuple[Path, Path, Path], tuple[f
     if len(paths) != 3:
         raise ValueError(f"Expected exactly 3 RAW files in {directory}, found {len(paths)}")
 
-    provisional_factors, records = read_exposure_factors((paths[0], paths[1], paths[2]))
-    ranked = sorted(zip(provisional_factors, paths, records), key=lambda item: item[0])
+    command = [
+        "exiftool", "-json", "-n", "-ExposureTime", "-ISO", "-FNumber",
+        *(str(path) for path in paths),
+    ]
+    response = subprocess.run(command, capture_output=True, text=True, check=True)
+    records = json.loads(response.stdout)
+
+    if len(records) != 3:
+        raise ValueError("EXIF data is required for every RAW file")
+
+    try:
+        ranked = sorted(
+            zip((exposure_value(record) for record in records), paths, records),
+            key=lambda item: item[0],
+        )
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("Invalid exposure data in RAW metadata") from error
+
     ordered_paths = tuple(item[1] for item in ranked)
     ordered_records = [item[2] for item in ranked]
     factors, _ = read_exposure_factors(ordered_paths)
@@ -284,7 +302,7 @@ def main() -> int:
             args.tile_size,
             args.overlap,
         )
-    except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as error:
+    except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError, json.JSONDecodeError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
 
