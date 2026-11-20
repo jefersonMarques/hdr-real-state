@@ -1,6 +1,5 @@
 import argparse
 import json
-import math
 import subprocess
 import sys
 from pathlib import Path
@@ -74,9 +73,16 @@ def calculate_size(width: int, height: int, max_side: int) -> tuple[int, int]:
     if max_side < 256 or max_side % 16 != 0:
         raise ValueError("Maximum side must be at least 256 and divisible by 16")
 
-    scale = min(1.0, max_side / max(width, height))
-    result_width = max(16, math.floor(width * scale / 16) * 16)
-    result_height = max(16, math.floor(height * scale / 16) * 16)
+    original_max_side = max(width, height)
+    target_max_side = min(original_max_side, max_side)
+    result_width = max(
+        16,
+        ((width * target_max_side // original_max_side) // 16) * 16,
+    )
+    result_height = max(
+        16,
+        ((height * target_max_side // original_max_side) // 16) * 16,
+    )
 
     if min(result_width, result_height) < 256:
         raise ValueError("The input aspect ratio is too extreme for this experiment")
@@ -113,7 +119,7 @@ def develop_raw(path: Path, white_balance: tuple[float, ...]) -> Image.Image:
 
     with rawpy.imread(str(path)) as camera:
         developed = camera.postprocess(
-            user_wb=white_balance,
+            user_wb=list(white_balance),
             use_camera_wb=False,
             no_auto_bright=True,
             output_color=rawpy.ColorSpace.sRGB,
