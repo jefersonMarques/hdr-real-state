@@ -44,6 +44,16 @@ The first PoC works at reduced resolution on the user's RTX 4060 8 GB with seque
 
 Model weights and user photographs remain local and outside the Git repository.
 
+## Regression fixes (2026-11-20)
+
+The first WSL preparation run revealed two coding defects in the new V4 script:
+- `rawpy.postprocess(user_wb=...)` accepts a Python **list**, not the tuple returned by the camera white-balance function. The adapter now passes a list without changing the shared WB values.
+- Integer-safe resize arithmetic avoids floating-point underflow that produced `1008×672` instead of the expected `1024×672` for a `6024×4024` original.
+
+Regression tests were added for both cases. The previous attempt did **not** generate `triplet.json`, so the following FLUX and benchmark file-not-found errors were a cascade, not independent model failures.
+
+After `git pull --ff-only`, run the full V4 test module and start a **new numbered output directory** (for example, `v4-triplet-input-02`) to avoid reusing a partially prepared folder. Use that same suffix in the FLUX input and comparison commands. Do not delete earlier outputs.
+
 ## Run on the existing machine
 
 ### Step 1 — verify project on main and prepare three RAWs
