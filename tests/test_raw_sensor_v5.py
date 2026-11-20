@@ -102,7 +102,20 @@ class RawSensorAuditTests(unittest.TestCase):
                         report = inspect_triplet(folder, folder / "audit", 8)
 
             self.assertEqual(len(report["inputs"]), 3)
-            self.assertEqual(report["inputs"][0]["role"], "under")
+            self.assertEqual(
+                [record["role"] for record in report["inputs"]],
+                ["under", "reference", "over"],
+            )
+            self.assertEqual(
+                [record["relative_exposure"] for record in report["inputs"]],
+                [0.5, 1.0, 2.0],
+            )
+            self.assertEqual(
+                [record["file"] for record in report["inputs"] if "file" in record],
+                [],
+            )
+            self.assertEqual(set(normalized), {"visible_mosaic_dimensions", "channels"})
+            self.assertEqual(len({id(record) for record in report["inputs"]}), 3)
             self.assertTrue((folder / "audit" / "raw_sensor_report.json").is_file())
             self.assertFalse((folder / "audit" / "under.ARW").exists())
 
