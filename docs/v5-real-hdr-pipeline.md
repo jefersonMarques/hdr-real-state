@@ -132,6 +132,94 @@ explorer.exe "$(wslpath -w /opt/hdr-real-state/output/v5-01/review)"
 
 The benchmark resizes images for approximate RGB metrics, **without registration**. It cannot prove photographic fidelity. It produces `comparison.jpg` and `report.json`.
 
+## V5.1 — recover natural shadow contrast (2026-11-20)
+
+The user's first V5 benchmark was noticeably closer to the professional edit, but too washed out. The supplied report shows:
+
+| Statistic | V5 baseline | Expert Photoshop edit |
+|---|---:|---:|
+| Median brightness | 0.6766 | 0.6402 |
+| Dark pixels / regions | 0.0042 | 0.1266 |
+| Bright pixels / regions | 0.0161 | 0.0231 |
+
+These are descriptive statistics, not perceptual similarity or guarantees for other properties. The lack of dark regions explains why the table, furniture and wall details looked flat.
+
+The default tone mapper has **not changed**. Three optional CLI controls have been added to `poc/tone_map_v5.py`:
+
+- `--target-mid`: decreases/increases global midtone target; original default `0.42`; experimental `0.37`
+- `--local-strength`: controls local contrast compensation; original default `0.25`; experimental `0.15`
+- `--shadow-contrast`: new shadow-toe control, originally off (`0.0`); experimental `0.40`. Darkens shadows with little influence on bright surfaces. It is a photographic post-fusion adjustment, **not AI**.
+
+**The new parameters have not been measured on the new RAW files.** Always compare against the original V5 render and visually inspect the same outdoor details.
+
+### New photographs in `photos/`
+
+The user replaced or added photographs at `\\wsl.localhost\Ubuntu-24.04\opt\hdr-real-state\photos`. Our source session cannot directly inspect that Windows/WSL folder. Verify **exactly three** matching RAW files before processing. Do not mix photographs from different scenes or different cameras, and do not use `photos/DSC01858.jpg` as a professional reference unless it is the edit of the **new** bracket set.
+
+Inspect:
+
+```bash
+cd /opt/hdr-real-state
+git pull --ff-only
+source .venv/bin/activate
+
+find photos -maxdepth 1 -type f \
+  \( -iname '*.ARW' -o -iname '*.CR2' -o -iname '*.CR3' \
+     -o -iname '*.NEF' -o -iname '*.DNG' -o -iname '*.RAF' \
+     -o -iname '*.RW2' \) -printf '%f\n' | sort
+
+exiftool -FileName -ExposureTime -ISO -FNumber -ExposureCompensation photos/*
+python -m unittest discover -s tests -p 'test_v5_pipeline.py' -v
+```
+
+If the folder contains more than three RAWs, move the **new** trio to a separate local input folder and point `--photos` there; the V5 parser requires exactly three. All photos and output files remain outside Git.
+
+### Process a fresh bracket without reusing old HDR files
+
+```bash
+set -e
+python poc/prepare_triplet_linear_v5.py \
+  --photos photos \
+  --output-dir output/v5-new-photos-01
+
+python poc/merge_hdr_v5.py \
+  --triplet output/v5-new-photos-01/triplet_v5.json \
+  --output-dir output/v5-new-photos-01 \
+  --alignment translation
+
+python poc/tone_map_v5.py \
+  --source output/v5-new-photos-01/merged_hdr.npy \
+  --output-dir output/v5-new-photos-01/grade-balanced \
+  --target-mid 0.37 \
+  --local-strength 0.15 \
+  --shadow-contrast 0.40
+
+python poc/export_v5.py \
+  --hdr output/v5-new-photos-01/merged_hdr.npy \
+  --tone-mapped output/v5-new-photos-01/grade-balanced/tone_mapped_16bit.tiff \
+  --output-dir output/v5-new-photos-01/final-balanced
+```
+
+This creates a real source-resolution JPEG and 16-bit RGB TIFF from the **new** RAW trio. Old outputs remain unchanged. The new `--target-mid`, `--local-strength`, and `--shadow-contrast` are **initial hypotheses**, not calibrated values for this new scene. For a baseline with original V5 rendering defaults, render again to a separate new output folder without those flags.
+
+To compare the result with the **new** middle RAW reference (not a previous scene's Photoshop edit), independently develop the new trio for an RGB reference preview:
+
+```bash
+python poc/prepare_triplet_v4.py \
+  --photos photos \
+  --output-dir output/v5-new-raw-preview-01 \
+  --max-side 1024
+
+python poc/benchmark_v5.py \
+  --before output/v5-new-raw-preview-01/reference.png \
+  --after output/v5-new-photos-01/final-balanced/photo_final.jpg \
+  --output-dir output/v5-new-photos-01/review
+
+explorer.exe "$(wslpath -w /opt/hdr-real-state/output/v5-new-photos-01/review)"
+```
+
+Because no matching professionally edited reference for the new trio has been provided, this comparison intentionally omits `--reference`. Add it only after verifying that the file depicts the exact same new photo session. Review `merge_report.json` for alignment and the window/leaf details at 100% magnification.
+
 ## Expected visual quality gate
 
 Check the final image at 100% zoom, not only a contact sheet:
