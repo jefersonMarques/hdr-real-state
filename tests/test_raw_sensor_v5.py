@@ -28,6 +28,28 @@ class RawSensorAuditTests(unittest.TestCase):
         self.assertAlmostEqual(metrics["sensor_saturated_fraction"], 0.2)
         self.assertAlmostEqual(metrics["near_white_fraction"], 0.4)
 
+    def test_detects_high_code_plateau_above_declared_white(self) -> None:
+        values = np.array(
+            [512, 800, 15359, 15360, 16372, 16372, 16372, 16375],
+            dtype=np.uint16,
+        )
+        metrics = sensor_channel_statistics(values, 512, 15360)
+
+        self.assertAlmostEqual(metrics["above_declared_white_fraction"], 5 / 8)
+        self.assertAlmostEqual(metrics["strictly_above_declared_white_fraction"], 4 / 8)
+        self.assertEqual(metrics["sampled_raw_max"], 16375)
+        self.assertEqual(metrics["dominant_high_code"], 16372)
+        self.assertAlmostEqual(metrics["dominant_high_code_sample_fraction"], 3 / 8)
+        self.assertAlmostEqual(metrics["sampled_max_code_fraction"], 1 / 8)
+
+    def test_empty_high_tail_does_not_invent_saturation_plateau(self) -> None:
+        values = np.array([512, 800, 900, 1200], dtype=np.uint16)
+        metrics = sensor_channel_statistics(values, 512, 15360)
+
+        self.assertIsNone(metrics["dominant_high_code"])
+        self.assertEqual(metrics["dominant_high_code_sample_fraction"], 0.0)
+        self.assertEqual(metrics["above_declared_white_fraction"], 0.0)
+
     def test_channel_sampling_includes_all_bayer_phases(self) -> None:
         pattern = np.array([[0, 1], [3, 2]], dtype=np.uint8)
         colors = np.tile(pattern, (16, 16))
@@ -71,6 +93,8 @@ class RawSensorAuditTests(unittest.TestCase):
             report = inspect_raw_sensor(Path("camera.ARW"), 4)
 
         self.assertEqual(report["visible_mosaic_dimensions"], [16, 16])
+        self.assertEqual(report["libraw_global_white_level"], 4095)
+        self.assertEqual(report["channels"]["channel_0"]["dominant_high_code"], 4095)
         self.assertEqual(report["channels"]["channel_0"]["sensor_saturated_fraction"], 1.0)
         self.assertEqual(report["channels"]["channel_1"]["sensor_saturated_fraction"], 0.0)
         camera.postprocess.assert_not_called()
