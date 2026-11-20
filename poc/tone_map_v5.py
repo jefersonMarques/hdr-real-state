@@ -11,10 +11,19 @@ def main() -> int:
     )
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--target-mid", type=float, default=0.42)
+    parser.add_argument("--local-strength", type=float, default=0.25)
+    parser.add_argument("--shadow-contrast", type=float, default=0.0)
     args = parser.parse_args()
 
     try:
-        report = tone_map_file(args.source, args.output_dir)
+        report = tone_map_file(
+            args.source,
+            args.output_dir,
+            target_mid=args.target_mid,
+            local_strength=args.local_strength,
+            shadow_contrast=args.shadow_contrast,
+        )
     except (OSError, ValueError, RuntimeError, ImportError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
