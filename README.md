@@ -6,9 +6,19 @@ Target workflow: three bracketed camera RAW files (underexposed, reference, over
 
 ## Project status
 
-**V4 research started on `main` only: three RAW exposures are now prepared independently and passed together to FLUX.2 Klein. No HDR JPEG/TIFF is used as model input. Multi-reference editing is not yet a verified true HDR fusion network or a professional final export.**
+**V5 photographic source-fusion baseline is published on `main` for user-side validation. It is not a trained neural HDR model or a verified professional final export. V4 multi-reference FLUX and earlier pipelines remain available as comparisons.**
 
 A first full-resolution Sony ARW neural test ran locally on an RTX 4060 through PyTorch CUDA. The photographed bedroom's generated preview was substantially underexposed and the window lacked useful exterior contrast. The cause has not been isolated; the neural TIFF, original brackets and preview mapping must be compared before choosing a correction.
+
+## V5 — camera RAW HDR fusion baseline (new test)
+
+The [V5 real HDR baseline](docs/v5-real-hdr-pipeline.md) has been implemented **directly on `main`**, without changing V4 or older experiments. It decodes three original RAW exposures with a shared camera white balance, registers frame translations, merges reliable source data into a float32 HDR, performs local tone mapping and exports full-resolution JPEG / 16-bit TIFF.
+
+- [V5 core](poc/v5_core.py): linear RAW, translation registration, confidence-weighted merge, tone map and export
+- [V5 independent automated tests](tests/test_v5_pipeline.py)
+- [V5 WSL run commands and quality checks](docs/v5-real-hdr-pipeline.md)
+
+**Important:** V5 is a photographic (non-neural) fusion baseline for future comparison with **true exposure-aware neural** models. It is not the final AI editor; its new synthetic tests and real photographic quality have not yet been confirmed on the user's WSL camera RAWs. Files are committed but no claim of production image quality is made.
 
 ## V4 — direct three-exposure neural experiment
 
