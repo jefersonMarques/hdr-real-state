@@ -1,0 +1,2 @@
+# Instalar somente no ambiente existente .venv após confirmar o NumPy instalado.
+opencv-python-headless==4.11.0.86
