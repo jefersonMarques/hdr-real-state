@@ -23,3 +23,4 @@ weights/
 *.png
 .venv-editor/
 dataset/
+.venv-flux/
