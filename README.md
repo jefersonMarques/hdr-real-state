@@ -6,9 +6,21 @@ Target workflow: three bracketed camera RAW files (underexposed, reference, over
 
 ## Project status
 
-**v3 design and first neural photo-editor evaluation are ready to test. This is not yet a production editor, completed neural editor pipeline, or an installer.**
+**V4 research started on `main` only: three RAW exposures are now prepared independently and passed together to FLUX.2 Klein. No HDR JPEG/TIFF is used as model input. Multi-reference editing is not yet a verified true HDR fusion network or a professional final export.**
 
 A first full-resolution Sony ARW neural test ran locally on an RTX 4060 through PyTorch CUDA. The photographed bedroom's generated preview was substantially underexposed and the window lacked useful exterior contrast. The cause has not been isolated; the neural TIFF, original brackets and preview mapping must be compared before choosing a correction.
+
+## V4 — direct three-exposure neural experiment
+
+The current development route is [V4: three camera RAWs directly into neural generation](docs/v4-triplet-neural-hdr.md).
+
+- [Prepare three RAW images with one white balance, EXIF-ordered](poc/prepare_triplet_v4.py)
+- [Run FLUX.2 Klein with all three reference images](poc/flux_triplet_v4.py)
+- [V4 tests](tests/test_triplet_v4.py)
+
+The scripts commit directly to `main`, with no branches, pull requests or GitHub Actions. This first test uses FLUX multi-image **reference conditioning**, not a learned sensor-linear fusion model. A specialized high-resolution exposure-aware neural HDR editor remains a later research milestone. No actual WSL three-RAW model run has yet been validated.
+
+## Earlier experiments (v2/v3, retained as historical baselines)
 
 ## New direction: neural photo editor
 
