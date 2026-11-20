@@ -1,3 +1,4 @@
+import argparse
 import json
 import sys
 import tempfile
@@ -7,6 +8,8 @@ from unittest.mock import patch
 
 import numpy as np
 import torch
+from PIL import Image
+from tifffile import imwrite
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "poc"))
 
@@ -14,6 +17,7 @@ from benchmark_afunet import (
     analyze_preview,
     mean_absolute_error,
     resize_float_image,
+    run_benchmark,
     run_checkpoint,
     verify_existing_baseline,
 )
@@ -63,6 +67,67 @@ class AfunetCheckpointBenchmarkTests(unittest.TestCase):
 
         self.assertEqual(result["mean_absolute_difference_from_baseline_0_255"], 100.0)
         self.assertEqual(result["approximate_rgb_mae_from_professional_0_255"], 20.0)
+
+    def test_full_resolution_baseline_is_resized_before_comparison(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            photos = folder / "photos"
+            photos.mkdir()
+            paths = tuple(photos / name for name in ("under.ARW", "reference.ARW", "over.ARW"))
+
+            for source in paths:
+                source.touch()
+
+            weights = folder / "weights"
+            weights.mkdir()
+            for name in ("Kalantari", "Hu", "Tel"):
+                (weights / f"{name}.pth").write_bytes(b"synthetic-checkpoint")
+
+            baseline_file = folder / "baseline.tiff"
+            baseline = np.full((160, 240, 3), 0.3, dtype=np.float32)
+            imwrite(baseline_file, baseline, photometric="rgb")
+            baseline_report = folder / "report.json"
+            baseline_report.write_text(
+                json.dumps({"inputs": [str(path) for path in paths]}),
+                encoding="utf-8",
+            )
+
+            output = folder / "output"
+            args = argparse.Namespace(
+                photos=photos,
+                afunet_source=folder,
+                checkpoint_dir=weights,
+                baseline_hdr=baseline_file,
+                baseline_report=baseline_report,
+                professional_jpeg=None,
+                output_dir=output,
+                max_side=80,
+                tile_size=128,
+                overlap=32,
+            )
+            shapes = []
+
+            def fake_checkpoint(
+                name, checkpoint, source, images, factors, device,
+                tile_size, overlap, destination,
+            ):
+                shapes.append(images[0].shape)
+                pixels = np.full(images[0].shape, 120, dtype=np.uint8)
+                Image.fromarray(pixels).save(destination / f"{name.lower()}_preview.png")
+                return pixels, 0.0, {"seconds": 0.0}
+
+            with patch(
+                "benchmark_afunet.discover_brackets",
+                return_value=(paths, (0.5, 1.0, 2.0), []),
+            ):
+                with patch("benchmark_afunet.load_raw", return_value=baseline):
+                    with patch("benchmark_afunet.run_checkpoint", side_effect=fake_checkpoint):
+                        run_benchmark(args)
+
+            self.assertEqual(shapes, [(53, 80, 3)] * 3)
+            self.assertTrue((output / "comparison.jpg").is_file())
+            report = json.loads((output / "benchmark.json").read_text(encoding="utf-8"))
+            self.assertEqual(report["image_dimensions"], [53, 80])
 
     def test_model_inference_creates_distinct_preview_and_tiff(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
