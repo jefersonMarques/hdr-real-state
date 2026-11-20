@@ -49,6 +49,50 @@ For the current bracket:
 
 Only two EV separate the darkest and brightest brackets, so strongly sunlit windows may still be difficult even with proper fusion. Check actual sensor clipping first rather than assume the source has recoverable detail.
 
+## Real Sony ARW audit: 2026-11-20
+
+The user ran all five original RAW inspection tests successfully and generated a report for:
+
+| RAW | Exposure | Declared black | Declared white | Green at/above white | Red at/above white |
+|---|---:|---:|---:|---:|---:|
+| `DSC01132.ARW` | -1 EV | 512 | 15360 | 3.83% | 0.66% |
+| `DSC01134.ARW` | 0 EV | 512 | 15360 | 6.20% | 2.69% |
+| `DSC01133.ARW` | +1 EV | 512 | 15360 | 7.31% | 4.96% |
+
+The 99th percentile of multiple Bayer channels was normalized to `1.068157315`, which corresponds to a raw code of approximately `16372` using the reported black/white levels. This is **above the camera-declared white of 15360**. The report's historical `sensor_saturated_fraction` thus measures samples *at/above the reported camera white threshold*, **not** proven physical photo-site clipping. Many high samples may be part of a plateau, but a percentile cannot by itself prove a plateau or usable remaining headroom.
+
+The user also confirms `4024 x 6024` visible CFA geometry, 2x2 Bayer pattern, same base ISO 160 for the bracket, and common camera white balance `[3068, 1024, 1704, 1024]`.
+
+### Supplemental non-destructive white-level/plateau check
+
+The independent script now includes, per CFA color:
+
+- `libraw_global_white_level` at the image level, **separate** from the four `white_levels` values.
+- `sampled_raw_p99` and `sampled_raw_max` of actual mosaic counts.
+- `sampled_max_code_fraction`.
+- `dominant_high_code` and its fraction of all sampled pixels; a recurring high code may signal the sensor's output plateau.
+- `above_declared_white_fraction` and `strictly_above_declared_white_fraction`, without claiming all such pixels are physically saturated.
+- Historical `sensor_saturated_fraction` retained for report compatibility, but **explicitly reinterpreted** as a declared-white-threshold indicator.
+
+Run in the same `.venv`, **without overwriting** the earlier audit:
+
+```bash
+cd /opt/hdr-real-state
+git pull --ff-only
+source .venv/bin/activate
+
+python -m unittest discover -s tests -p 'test_raw_sensor_v5.py' -v
+
+python poc/inspect_raw_sensor_v5.py \
+  --photos photos \
+  --output-dir output/v5-raw-audit-03 \
+  --sample-stride 8
+
+cat output/v5-raw-audit-03/raw_sensor_report.json
+```
+
+Seven tests are now defined (two additional plateau regression tests), but the new code still needs the user's WSL validation. The pre-existing V5 output and RAWs are unchanged. The actual result of this supplemental audit determines whether a 15360 threshold, a repeatable high code (potentially 16372), or another camera-calibrated criterion is appropriate for robust pixel confidence. This must be confirmed **before** enabling a sensor-clipping mask in the V5 fusion.
+
 ## Engineering plan for V5.2 after sensor results
 
 The next stage **changes the source-of-truth for fusion reliability**, so it requires real camera validation. It should be implemented as a separate opt-in path, preserving `poc/v5_core.py` defaults:
