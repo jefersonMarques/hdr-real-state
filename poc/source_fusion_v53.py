@@ -416,6 +416,21 @@ def render_scene(
         np.uint8(np.round(small_mask * 255.0))
     ).save(mask_path)
 
+    display_reference = encode_srgb_16(
+        np.clip(reference, 0.0, 1.0)
+    )
+    display_reference = np.uint8(
+        (display_reference.astype(np.uint32) * 255 + 32767) // 65535
+    )
+    overlay = display_reference.astype(np.float32)
+    tint = np.array([255.0, 20.0, 30.0], dtype=np.float32)
+    alpha = (0.48 * small_mask)[..., None]
+    overlay = overlay * (1.0 - alpha) + tint * alpha
+    overlay_path = output_dir / "exterior_mask_overlay.jpg"
+    Image.fromarray(
+        np.uint8(np.round(overlay))
+    ).save(overlay_path, format="JPEG", quality=95, subsampling=0)
+
     mapped = np.empty((height, width, 3), dtype=np.uint16)
 
     for start in range(0, height, rows_per_chunk):
@@ -457,6 +472,7 @@ def render_scene(
         "exterior_mask_fraction": float(np.mean(small_mask > 0.5)),
         "exterior_mask_source": str(optional_window_mask) if optional_window_mask else "auto",
         "exterior_mask_preview": str(mask_path),
+        "exterior_mask_overlay": str(overlay_path),
         "window_exposure_offset_ev": parameters["window_offset"] / math.log(2),
         "target_mid": target_mid,
         "window_target": window_target,
@@ -527,6 +543,7 @@ def main() -> int:
     print(f"Final JPEG: {final['jpeg']}")
     print(f"Final 16-bit TIFF: {final['tiff']}")
     print(f"Window segmentation mask: {render['exterior_mask_preview']}")
+    print(f"Window overlay for quality check: {render['exterior_mask_overlay']}")
     print(f"Exterior coverage: {render['exterior_mask_fraction']:.1%}")
     return 0
 
