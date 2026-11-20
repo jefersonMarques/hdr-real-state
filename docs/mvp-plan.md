@@ -33,9 +33,19 @@ Run synthetic unit tests with `python -m unittest discover -s tests -v`.
 - A simple preview tone map is used. The output is not a production real-estate edit.
 - Neural inference is tiled, but complete RAW images still occupy system RAM.
 - No production alignment calibration, photographic quality benchmark, batch mode, GUI, ONNX conversion or installer.
-- The real AFUNet checkpoint has not yet been tested against user-supplied three-camera RAWs.
+- The AFUNet checkpoint completed local inference on Sony ARW brackets with an NVIDIA RTX 4060, but photographic quality failed the first evaluation.
 - GPU acceleration is only enabled where PyTorch reports CUDA availability, including supported ROCm environments; otherwise the experiment uses CPU.
 - Real full-resolution output and installer compatibility have not been verified.
+
+## Stage 0.1: reproducible quality diagnosis (committed)
+
+The first real Sony ARW/RTX 4060 AFUNet experiment finished and produced a float32 HDR image, but its original JPEG preview was strongly underexposed with minimal visible outdoor detail. This is a failed **image quality** gate, not a failed CUDA or file-processing test.
+
+The diagnostic path is described in [quality-validation.md](quality-validation.md). It uses actual EXIF shutter speed, ISO and aperture to compute bracket exposure ratios, produces a linear camera-RAW exposure-weighted conventional HDR, re-renders the existing AFUNet TIFF with the same preview curve and creates a side-by-side comparison with image statistics.
+
+There is no additional neural inference. The diagnostic script has synthetic unit tests, but its real-RAW baseline output still needs validation on the local WSL images. This baseline is not an alternative final product: neural processing remains mandatory for the intended application.
+
+**Next decision:** inspect whether window detail exists in the underexposed RAW and conventional merge; assess the new neural re-map separately from its original JPEG; then fix model input calibration/alignment or develop production tone mapping based on the evidence.
 
 ## Stage 1: model and quality validation
 
