@@ -69,3 +69,29 @@ For a fair qualitative judgement, inspect corresponding regions of the window, w
 - Model training data uses LDR inputs. A wrong RAW-to-LDR mapping, camera response, exposure factor or missing alignment may cause a genuine neural reconstruction problem; a better JPEG curve alone cannot fix it.
 
 **Decision gate:** if the conventional baseline reveals window detail but the neural remap cannot, prioritize the neural input contract and source alignment. If both TIFFs retain detail but the original neural JPEG is dark, prioritize tone mapping/exposure control. If neither retains window detail, inspect the original underexposed RAW and the demosaicing/highlight handling first.
+
+## Stage 0.2: highlight recovery experiment
+
+The supplied images confirm that the dark RAW preview contains true outdoor scene detail (roof, tree, fence and sky). The conventional merged HDR TIFF retains large relative radiance values in the window, which the global tone mapper compresses toward white. The neural re-mapped JPEG is also nearly white around the window. **The neural float TIFF was not provided for direct examination**, so neural reconstruction loss versus preview loss remains undecided.
+
+A separate diagnostic post-processor at `poc/hdr_window_recovery.py` tests an exposure-aware highlight mask. It compares the bright reference preview with the underexposed RAW preview, filters out small disconnected highlights (such as ceiling lights) and locally preserves actual pixels from the underexposed source. It performs linear-light compositing with a small adjustable exposure gain.
+
+Run **after** `hdr_diagnostics.py` has generated the five preview files:
+
+```bash
+python poc/hdr_window_recovery.py \
+  --under-preview output/review-test2/under.jpg \
+  --reference-preview output/review-test2/reference.jpg \
+  --conventional-preview output/review-test2/conventional_preview.jpg \
+  --neural-preview output/review-test2/neural_remapped.jpg \
+  --output-dir output/review-test2/window-test
+```
+
+Files:
+- `window_comparison.jpg`: conventional and neural previews before and after preserving source highlights
+- `conventional_window_recovered.jpg` and `neural_window_recovered.jpg`: separate full-resolution previews
+- `highlight_mask.jpg`: actual mask used for compositing, important for identifying false selections or halos
+
+The mask thresholding was tuned only on **one** uploaded real-estate bracket and **must not** be considered robust for every camera, sky, window shape or interior. No camera-motion registration/deghosting is present. When exposure misalignment exists, window edges can double. The preview compositing is loss of dynamic range (JPEG-domain) and does **not** replace color-managed HDR radiance reconstruction; it only tests whether a source-guided highlight path restores real details.
+
+No model weights, AFUNet implementation or prior neural outputs are changed. Confirm improvements at 100% resolution and inspect the mask before proceeding to calibrated RAW-domain highlight protection and neural model-input correction.
