@@ -25,8 +25,9 @@ First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.m
 - `poc/benchmark_afunet.py`: three-checkpoint AFUNet comparison.
 - `poc/benchmark_editor_v3.py`: comparison harness for neural **photo-editing** against conventional baseline and an optional professional reference.
 - `docs/v3-first-model-test.md`: executable first trial with **external** DeepLPF pretrained model, isolated editor environment and RTX 4060.
+- `poc/prepare_editor_input.py`: prepare a bounded RGB image for memory-limited GPU inference, keeping existing source images intact.
 
-**No v3 model has yet been run successfully on a user's WSL photographs. No neural editor quality improvement has been proven.** External models, weights and user photos are intentionally not committed.
+**DeepLPF's pretrained checkpoint loaded on CUDA, but the first native-resolution attempt hit a GPU out-of-memory exception on an 8 GB RTX 4060. No complete v3 inference output or photographic quality improvement has been verified yet.** The next test uses a 1024-pixel input, without overwriting previous images. External models, weights and user photos are intentionally not committed.
 
 ## Engineering constraints
 
