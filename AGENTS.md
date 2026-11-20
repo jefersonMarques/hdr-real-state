@@ -4,6 +4,19 @@
 
 Build an offline-first, commercial real-estate **AI photo editor** for three exposure-bracketed camera RAWs. The product needs true photographic enhancements learned by neural models; a classical HDR merger with a manually written preset is **not** an acceptable AI product.
 
+## Current experimental milestone — V5 (2026-11-20)
+
+User approved an independent, more reliable **three-camera-RAW photographic baseline**, to be evaluated before adding neural retouching. New code is in `poc/v5_core.py` with the five standalone V5 commands and `tests/test_v5_pipeline.py`. The runnable guide is [docs/v5-real-hdr-pipeline.md](docs/v5-real-hdr-pipeline.md).
+
+V5:
+- Decodes original RAWs using shared WB and linear gamma, infers exposure ratios from EXIF and saves float32 source frames.
+- Aligns **translations only** using phase correlation; does not claim full optical registration or foliage deghosting.
+- Merges original linear RGB with exposure-aware confidence weights, builds `merged_hdr.npy`, tone maps and exports real 16-bit sRGB TIFF plus JPEG.
+- Is a **non-neural** baseline. It neither uses the old conventional HDR JPEG nor does trained AI fusion. Specialized triplet-aware AI remains the long-term goal.
+- **Has not been run or visually approved on the user's WSL photos yet.** Synthetic tests are committed and need user-side validation.
+
+Continue exclusively on `main`, preserving V2–V4 experiments. Do not create branches, PRs or GitHub Actions.
+
 ## Current approved architecture — V4 (2026-11-20)
 
 **Single-branch rule: work directly on `main` only. Do not create branches, pull requests, or GitHub Actions unless explicitly authorized.**
@@ -57,13 +70,12 @@ The older [v3 architecture](docs/v3-architecture.md) remains historical document
 - Never claim a GPU running implies useful neural photographic editing.
 - Reject fabricated scenery/objects, unlabeled hallucination and structural geometric modifications.
 
-## Next work: V4 three-RAW evaluation on the RTX 4060
+## Next work: V5 real RAW validation on WSL
 
-1. Pull the latest `main` and run `tests/test_triplet_v4.py` in `.venv`.
-2. Run `poc/prepare_triplet_v4.py` on exactly three original RAWs in `photos/` (no conventional HDR is created).
-3. Run `poc/flux_triplet_v4.py` in `.venv-flux` on the three prepared reference images, with GPU offload.
-4. Compare `neural_triplet.png` with under/reference/over originals and the Photoshop retouch. Inspect exact real leaves, sunlight, geometry and color. GPU activity or high aesthetic quality alone does not pass.
-5. If generative multi-reference editing loses sensor-authentic details, evaluate a **trained three-exposure correspondence/fusion + retouch network**, not an HDR JPEG input.
-6. Validate original-resolution sensor fidelity and licensed JPEG/TIFF export only after robust multi-scene testing.
+1. Run `git pull --ff-only`, verify `cv2` and run `tests/test_v5_pipeline.py` in the existing `.venv`.
+2. Prepare `output/v5-01` with exactly three original RAWs (not previous HDR JPEGs).
+3. Run the V5 translation merge, tone mapping and full-resolution final export in sequence; use a fresh output folder for retries.
+4. Inspect full-size foliage, frame alignment, neutral walls, shadows, color and local-tone halos against the Photoshop edit; submit `comparison.jpg`, `report.json` and `merge_report.json`.
+5. **Do not assume V5 equals AI fusion.** If a reliable baseline is established, research a true learned three-bracket fusion/retouch network that receives calibrated source frames, not pre-composited low-resolution HDR.
 
 This file is the project's continuation context, not evidence that unexecuted work has passed tests.
