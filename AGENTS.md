@@ -24,6 +24,8 @@ First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.m
 - `poc/hdr_pipeline_v2.py`: historical experimental neural HDR + RAW highlight blending.
 - `poc/benchmark_afunet.py`: three-checkpoint AFUNet comparison.
 - `poc/benchmark_editor_v3.py`: comparison harness for neural **photo-editing** against conventional baseline and an optional professional reference.
+- `poc/benchmark_3dlut_v3.py`: unvalidated-on-real-checkpoints neural adaptive 3D LUT inference with native PyTorch trilinear sampling and row-based application.
+- `docs/v3-adaptive-lut-test.md`: next execution and Photoshop comparison instructions for the RTX 4060.
 - `docs/v3-first-model-test.md`: executable first trial with **external** DeepLPF pretrained model, isolated editor environment and RTX 4060.
 - `poc/prepare_editor_input.py`: prepare a bounded RGB image for memory-limited GPU inference, keeping existing source images intact.
 
@@ -43,7 +45,7 @@ First model evaluation: [docs/v3-first-model-test.md](docs/v3-first-model-test.m
 - Never claim a GPU running implies useful neural photographic editing.
 - Reject fabricated scenery/objects, unlabeled hallucination and structural geometric modifications.
 
-## Next work after the current user runs the v3 test
+## Next work: validate actual pretrained LUT weights on WSL
 
 1. Treat the first DeepLPF pretrained trial as a negative result in this real-estate scene, documented in `docs/v3-deeplpf-evaluation.md`.
 2. Evaluate a second learned retoucher (modern image-adaptive 3D LUT with confirmed pretrained checkpoint) on the identical conventional baseline and Photoshop reference, using a separate environment if required.
