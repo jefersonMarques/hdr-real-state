@@ -19,6 +19,7 @@ The first real-estate benchmark showed that three AFUNet neural HDR checkpoints 
 - [Editorial AI benchmark script](poc/benchmark_editor_v3.py)
 - [Pretrained 3D LUT neural editor](poc/benchmark_3dlut_v3.py): independent full-resolution photo color/tone AI without legacy CUDA extensions; [WSL validation commands](docs/v3-adaptive-lut-test.md)
 - [FLUX.2 Klein experiment](poc/test_flux_klein_edit.py): generative image editing evaluation with 8 GB GPU offloading; [WSL instructions](docs/v3-flux-klein-test.md)
+- [FLUX fidelity experiment](poc/flux_klein_fidelity.py): actual image-initialized editing with controlled denoising strength (0.50/0.75), conservative prompts and optional Photoshop style reference; [WSL test](docs/v3-flux-fidelity.md). Experimental; neither run nor visual improvement is yet verified.
 - [Native-resolution FLUX-guided export](poc/export_flux_fullres.py): renders high-quality JPEG and high-bit-depth TIFF from the original HDR pixels using bounded FLUX edit adjustments; [commands and quality limits](docs/v3-flux-fullres-export.md)
 - [Project continuation and decisions](AGENTS.md)
 
