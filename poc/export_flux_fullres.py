@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageCms, ImageOps
-from tifffile import imwrite
+from tifffile import imread, imwrite
 
 
 LUMINANCE_WEIGHTS = np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
@@ -51,6 +51,45 @@ def encode_srgb(linear: np.ndarray) -> np.ndarray:
         12.92 * values,
         1.055 * np.power(values, 1.0 / 2.4) - 0.055,
     )
+
+
+
+def tone_map_linear_hdr(hdr: np.ndarray, highlight_mask: np.ndarray) -> np.ndarray:
+    if hdr.ndim != 3 or hdr.shape[2] != 3 or hdr.shape[:2] != highlight_mask.shape:
+        raise ValueError("HDR and highlight mask dimensions must match")
+
+    if not np.isfinite(hdr).all():
+        raise ValueError("HDR image contains nonfinite values")
+
+    positive = np.maximum(hdr.astype(np.float32), 0.0)
+    scene_luma = np.sum(positive * LUMINANCE_WEIGHTS, axis=2)
+    interior = scene_luma[(highlight_mask < 0.10) & (scene_luma > 1e-6)]
+    windows = scene_luma[(highlight_mask > 0.90) & (scene_luma > 1e-6)]
+
+    if interior.size < 64:
+        raise ValueError("Not enough reliable pixels in the HDR interior")
+
+    interior_median = max(float(np.median(interior)), 1e-6)
+    interior_scale = (0.42 / (1.0 - 0.42)) / interior_median
+
+    if windows.size >= 64:
+        window_median = max(float(np.median(windows)), 1e-6)
+        window_scale = min(
+            (0.40 / (1.0 - 0.40)) / window_median,
+            interior_scale,
+        )
+    else:
+        window_scale = interior_scale
+
+    interior_scale = float(np.clip(interior_scale, 0.01, 100.0))
+    window_scale = float(np.clip(window_scale, 0.001, 100.0))
+    exposure_map = np.exp(
+        np.log(interior_scale) * (1.0 - highlight_mask)
+        + np.log(window_scale) * highlight_mask
+    ).astype(np.float32)
+    scaled_luma = scene_luma * exposure_map
+    mapped_luma = scaled_luma / (1.0 + scaled_luma)
+    return positive * (mapped_luma / np.maximum(scene_luma, 1e-6))[..., None]
 
 
 def box_blur(values: np.ndarray, radius: int) -> np.ndarray:
@@ -135,6 +174,7 @@ def apply_adjustments(
     adjustments: list[np.ndarray],
     strength: float,
     rows_per_chunk: int,
+    linear_source: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     if source.ndim != 3 or source.shape[2] != 3 or source.dtype != np.uint8:
         raise ValueError("Expected an 8-bit RGB source image")
@@ -145,13 +185,21 @@ def apply_adjustments(
     if not 0.0 <= strength <= 1.0 or rows_per_chunk <= 0:
         raise ValueError("Invalid strength or chunk height")
 
+    if linear_source is not None:
+        if linear_source.shape != source.shape or not np.isfinite(linear_source).all():
+            raise ValueError("Linear HDR render must be finite and match source geometry")
+
     height, width, _ = source.shape
     output_16bit = np.empty((height, width, 3), dtype=np.uint16)
     output_8bit = np.empty_like(source)
 
     for start in range(0, height, rows_per_chunk):
         end = min(start + rows_per_chunk, height)
-        linear = decode_srgb(source[start:end])
+        linear = (
+            linear_source[start:end]
+            if linear_source is not None
+            else decode_srgb(source[start:end])
+        )
         exposure = adjustments[0][start:end]
         color = np.stack(
             (adjustments[1][start:end], adjustments[2][start:end], adjustments[3][start:end]),
@@ -177,7 +225,12 @@ def export_photo(
     max_color_log: float,
     blur_radius: int,
     rows_per_chunk: int,
+    linear_hdr: Path | None = None,
+    highlight_mask: Path | None = None,
 ) -> None:
+    if (linear_hdr is None) != (highlight_mask is None):
+        raise ValueError("Linear HDR and its highlight mask must be supplied together")
+
     if output_directory.exists() and any(output_directory.iterdir()):
         raise FileExistsError(f"Output folder is not empty: {output_directory}")
 
@@ -199,11 +252,25 @@ def export_photo(
         blur_radius,
     )
     resized = upscale_adjustments(adjustments, full_image.size)
+    linear_source = None
+
+    if linear_hdr is not None and highlight_mask is not None:
+        high_precision_hdr = np.asarray(imread(linear_hdr), dtype=np.float32)
+
+        with Image.open(highlight_mask) as source_mask:
+            mask = np.asarray(source_mask.convert("L"), dtype=np.float32) / 255.0
+
+        linear_source = tone_map_linear_hdr(high_precision_hdr, mask)
+
+        if linear_source.shape[:2] != (full_image.height, full_image.width):
+            raise ValueError("HDR geometry differs from the original full-resolution image")
+
     pixels_8bit, pixels_16bit = apply_adjustments(
         np.asarray(full_image),
         resized,
         strength,
         rows_per_chunk,
+        linear_source=linear_source,
     )
 
     output_directory.mkdir(parents=True, exist_ok=True)
@@ -236,12 +303,15 @@ def export_photo(
         "jpeg": {"path": str(jpeg_path), "quality": 98, "chroma_subsampling": "4:4:4"},
         "tiff": {"path": str(tiff_path), "bits_per_channel": 16, "compression": "lossless_deflate"},
         "strength": strength,
+        "linear_hdr_source": str(linear_hdr) if linear_hdr is not None else None,
+        "highlight_mask": str(highlight_mask) if highlight_mask is not None else None,
+        "tiff_uses_high_precision_hdr": linear_source is not None,
         "maximum_exposure_adjustment_ev": max_exposure_ev,
         "maximum_color_log_shift": max_color_log,
         "blur_radius": blur_radius,
         "warnings": [
             "This is an original-resolution source-preserving render guided by FLUX, not native full-resolution generative inference.",
-            "The baseline source is 8-bit display RGB; TIFF 16-bit stores the computed tonal values but cannot restore lost RAW precision or detail.",
+            "The TIFF stores 16-bit computed output. Without --linear-hdr it is based on 8-bit RGB and cannot restore lost RAW precision.",
             "The learned style is approximated by smooth bounded light/color adjustments; exact FLUX pixel content is not reproduced.",
             "Fine details already clipped in the source cannot be reconstructed by this export.",
             "No verified alignment, structural edit detection or professional photo-quality approval has been performed.",
@@ -268,6 +338,8 @@ def main() -> int:
     parser.add_argument("--max-color-log", type=float, default=0.12)
     parser.add_argument("--blur-radius", type=int, default=12)
     parser.add_argument("--rows-per-chunk", type=int, default=256)
+    parser.add_argument("--linear-hdr", type=Path)
+    parser.add_argument("--highlight-mask", type=Path)
     args = parser.parse_args()
 
     try:
@@ -281,6 +353,8 @@ def main() -> int:
             args.max_color_log,
             args.blur_radius,
             args.rows_per_chunk,
+            linear_hdr=args.linear_hdr,
+            highlight_mask=args.highlight_mask,
         )
     except (OSError, ValueError, TypeError) as error:
         print(f"Error: {error}", file=sys.stderr)
