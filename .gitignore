@@ -21,3 +21,5 @@ weights/
 *.jpg
 *.jpeg
 *.png
+.venv-editor/
+dataset/
