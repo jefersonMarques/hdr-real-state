@@ -208,12 +208,16 @@ def run_benchmark(args: argparse.Namespace) -> None:
         resize_float_image(load_raw(path), args.max_side)
         for path in paths
     )
-    baseline_hdr = np.asarray(imread(args.baseline_hdr), dtype=np.float32)
+    baseline_hdr = resize_float_image(
+        np.asarray(imread(args.baseline_hdr), dtype=np.float32),
+        args.max_side,
+    )
 
-    if images[0].shape[:2] != baseline_hdr.shape[:2]:
-        raise ValueError("Saved baseline TIFF does not match the RAW dimensions")
-
-    baseline_hdr = resize_float_image(baseline_hdr, args.max_side)
+    if images[0].shape != baseline_hdr.shape:
+        raise ValueError(
+            "Baseline HDR dimensions differ from the RAW images after resizing: "
+            f"RAW={images[0].shape}; baseline={baseline_hdr.shape}"
+        )
     baseline = tone_map(baseline_hdr)
     baseline_path = args.output_dir / "conventional_preview.png"
     Image.fromarray(baseline).save(baseline_path)
