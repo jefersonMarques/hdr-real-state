@@ -10,6 +10,12 @@ Target workflow: three bracketed camera RAW files (underexposed, reference, over
 
 A first full-resolution Sony ARW neural test ran locally on an RTX 4060 through PyTorch CUDA. The photographed bedroom's generated preview was substantially underexposed and the window lacked useful exterior contrast. The cause has not been isolated; the neural TIFF, original brackets and preview mapping must be compared before choosing a correction.
 
+## Last focused quality test — source-selective V5.3
+
+The current [V5.3 source-selective photographic experiment](poc/source_fusion_v53.py) is published directly to `main` with [nine synthetic regression tests](tests/test_source_fusion_v53.py) and a [single-run WSL quality gate](docs/v53-last-quality-gate.md). It **does not** depend on the prior V5/V5.2 merged HDR; it recomposes the three original RAW-derived linear exposures.
+
+The experiment prioritizes genuine underexposed detail in bright exterior regions, keeps camera/reference geometry in midtones, adds real overexposed shadow information, and applies a guided-filtered exterior mask, shadow depth and log-luminance detail contrast. It creates a red-on-photo exterior selection overlay and full-resolution JPEG / 16-bit TIFF. **Quality with the user's new Sony kitchen photographs is pending. This is deterministic photographic processing, not a trained AI photo editor.** Reject it if the mask bleeds into walls/countertops or if the outdoor details and contrast still fail against the professional edit.
+
 ## Current experiment: Sony RAW confidence fusion (V5.2)
 
 The actual camera audits of three Sony ARW exposures found a strongly repeated **RAW code 16372** beyond the camera-declared white level 15360, near LibRaw's global white 16380. We cannot equate 15360 with confirmed physical clipping.
