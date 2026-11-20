@@ -358,7 +358,10 @@ def tone_map_linear(
     mapped_luma = luma * np.float32(global_scale) * adjustment
     compressed_luma = mapped_luma / (1.0 + mapped_luma)
     scale = compressed_luma / np.maximum(luma, 1e-8)
-    return np.clip(pixels * scale[..., None], 0.0, 1.0).astype(np.float32)
+    rendered = pixels * scale[..., None]
+    peak = np.max(rendered, axis=2, keepdims=True)
+    rendered /= np.maximum(peak, 1.000001)
+    return np.clip(rendered, 0.0, 1.0).astype(np.float32)
 
 
 def encode_srgb_16(linear: np.ndarray) -> np.ndarray:
